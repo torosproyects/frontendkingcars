@@ -13,16 +13,28 @@ export interface Car {
   isInAuction?: boolean; // Si ya está en subasta
 }
 
+
 export interface Bid {
   id: string;
   auctionId: string;
-  userId: string;
-  userName: string;
+  userId?: string;
+  userName?: string;
   amount: number;
   timestamp: Date;
   isWinner?: boolean;
+  bidderId?: string;
+  bidderName?: string;
+  
 }
-
+export type UserCar = {
+  id: number;
+  make: string;
+  model: string;
+  year: number;
+  image: string;
+  isAvailableForAuction: boolean;
+  currentAuctionId?:string;
+};
 export interface Auction {
   id: string;
   car: Car;
