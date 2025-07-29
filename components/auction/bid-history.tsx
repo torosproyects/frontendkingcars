@@ -85,7 +85,7 @@ export function BidHistory({ bids, currentUserId }: BidHistoryProps) {
                       'text-xs font-semibold',
                       index === 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
                     )}>
-                      {getInitials(bid.userName)}
+                      {getInitials(bid.userName || "sinnom")}
                     </AvatarFallback>
                   </Avatar>
                   {index === 0 && (
