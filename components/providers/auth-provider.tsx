@@ -10,12 +10,14 @@ interface AuthProviderProps {
 const AuthContext = createContext<null>(null);
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const { initializeAuth, isLoading } = useAuthStore();
+ 
+ const {isLoading}= useAuthStore();
+  // const { initializeAuth, isLoading } = useAuthStore();
 
-  useEffect(() => {
+  //useEffect(() => {
     // Inicializar autenticación al cargar la aplicación
-    initializeAuth();
-  }, [initializeAuth]);
+  //  initializeAuth();
+  //}, [initializeAuth]);
 
   // Mostrar loading mientras se inicializa la autenticación
   if (isLoading) {
