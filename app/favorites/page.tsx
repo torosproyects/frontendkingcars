@@ -97,7 +97,7 @@ function FavoritesContent() {
                   </div>
                 </div>
                 <Button asChild className="w-full">
-                  <Link href={`/catalog/${vehicle.id}`}>Ver Detalles</Link>
+                  <Link href={`/catalog`}>Ver Detalles</Link>
                 </Button>
               </CardContent>
             </Card>

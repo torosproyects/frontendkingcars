@@ -11,13 +11,12 @@ const AuthContext = createContext<null>(null);
 
 export function AuthProvider({ children }: AuthProviderProps) {
  
- const {isLoading}= useAuthStore();
-  // const { initializeAuth, isLoading } = useAuthStore();
+ const { initializeAuth, isLoading } = useAuthStore();
 
-  //useEffect(() => {
-    // Inicializar autenticación al cargar la aplicación
-  //  initializeAuth();
-  //}, [initializeAuth]);
+  useEffect(() => {
+  
+    initializeAuth();
+ }, [initializeAuth]);
 
   // Mostrar loading mientras se inicializa la autenticación
   if (isLoading) {
