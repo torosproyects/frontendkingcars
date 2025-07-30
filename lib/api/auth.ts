@@ -1,8 +1,11 @@
-import { Captcha } from '@/components/auth/captcha';
 import { LoginCredentials, RegisterData, AuthResponse, User, VerifyCredentials, ResendCredentials } from '@/lib/types/auth';
 
 // Configuración de la API
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+interface ProfileResponse {
+  success: boolean;
+  user: User;
+}
 
 // Función para hacer peticiones HTTP
 async function apiRequest<T>(
@@ -156,19 +159,16 @@ getCurrentUser: async (): Promise<User> => {
   },
 
   // Obtener perfil del usuario
-  getProfile: async (token: string): Promise<User> => {
-    console.log('👤 Obteniendo perfil del usuario...');
-    
-    const response = await apiRequest<User>('/auth/profile', {
+  getProfile: async (): Promise<User> => {
+   
+    const response = await apiRequest<ProfileResponse>('/auth/profile', {
       method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include', // Muy importante para enviar cookies
     });
 
-    console.log('✅ Perfil obtenido exitosamente');
-    return response;
+    return response.user;
   },
+
 
   // Verificar si el email existe
   checkEmailExists: async (email: string): Promise<{ exists: boolean }> => {
@@ -178,7 +178,7 @@ getCurrentUser: async (): Promise<User> => {
       method: 'POST',
       body: JSON.stringify({ email }),
     });
-
+    
     return response;
   },
 

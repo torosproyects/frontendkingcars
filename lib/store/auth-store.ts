@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { User, LoginCredentials, VerifyCredentials, ResendCredentials, RegisterData, UserRole,ProfileStatus, VerificationRequirement, AccessResult} from '@/lib/types/auth';
+import { User, LoginCredentials, VerifyCredentials, ResendCredentials, RegisterData, UserRole,ProfileStatus, VerificationRequirement, AccessResult } from '@/lib/types/auth';
 import { authAPI } from '@/lib/api/auth';
 import { profileAPI, UpdateProfileData } from '@/lib/api/profile';
 
@@ -17,7 +17,7 @@ interface AuthState {
   preregister: (data: RegisterData) => Promise<boolean>;
   verifyEmail: (credentials: VerifyCredentials) => Promise<boolean>;
   resendVerificationCode: (credentials: ResendCredentials) => Promise<boolean>;
-  
+  refreshUser: () => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
   initializeAuth: () => void;
@@ -34,6 +34,7 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
+  
   // Estado inicial
   user: null,
   seLogueo: false,
@@ -78,6 +79,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
     }
   },
+  refreshUser: async () => {
+  try {
+    set({ isLoading: true });
+    const response = await authAPI.getProfile();
+        
+    set({
+        user: response,
+        seLogueo: true,
+        isLoading: false,
+        error: null,
+      });
+  } catch (error: any) {
+    console.error('Error al refrescar el usuario', error);
+    set({
+      user: null,
+      seLogueo: false,
+      error: error.message || 'Error desconocido' });
+  } finally {
+    set({ isLoading: false });
+  }
+},
   verifyEmail: async (credentials: VerifyCredentials) => {
     set({ isLoading: true, error: null });
     
@@ -163,7 +185,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: errorMessage,
       });
       throw error;
-      return false;
+     
     }
   },
   preregister: async (data: RegisterData) => {
@@ -201,6 +223,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // Cerrar sesión
   logout: async () => {
+    
     set({ isLoading: true });
     
     try {
@@ -214,7 +237,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       
       console.log('✅ Sesión cerrada exitosamente');
-      
+     
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
       
@@ -225,6 +248,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
         error: null,
       });
+      
     }
   },
 
@@ -279,7 +303,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initializeAuth: async () => {
     try {
     // Hacer petición para verificar sesión actual
-    const user = await authAPI.getCurrentUser();
+    const user = await authAPI.getProfile();
     set({
       user,
       seLogueo: true,
@@ -358,10 +382,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // Obtener estado del usuario
   getUserStatus: (): 'logueado' | 'verificado' | 'visitante' | 'rechazado'=> {
-    const { user, seLogueo } = get();
+    const { user } = get();
     
-    if (!seLogueo || !user) return 'visitante';
-    if (!user.role || user.profileStatus !== 'verificado') return 'logueado';
+    if (!user) return 'visitante';
+    if (user.profileStatus !== 'verificado') return 'logueado';
     return 'verificado';
   },
 
@@ -396,6 +420,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   isVerified: () => {
     const { user } = get();
-    return user?.profileStatus === 'verificado' && user?.role !== null;
+    return user?.profileStatus === 'verificado';
   },
 }));

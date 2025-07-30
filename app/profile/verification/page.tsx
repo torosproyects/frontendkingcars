@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import PhoneVerification from '@/components/verificacionsms/PhoneVerification';
+
 import Image from 'next/image';
 import {
   Select,
@@ -112,6 +113,7 @@ function VerificationContent() {
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [showPhoneVerification, setShowPhoneVerification] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
+  const refreshUser = useAuthStore((state) => state.refreshUser);
 
   const form = useForm<VerificationValues>({
     resolver: zodResolver(verificationSchema),
@@ -139,9 +141,9 @@ function VerificationContent() {
     label: "Documento de Identidad",
     description: "Toma una foto clara de tu documento oficial",
     required: true,
-    referenceImage: "/images/document-placeholder.jpg",
+    referenceImage: "/assets/png-transparent-toyota-.png",
     aspectRatio: "4/3",
-    guidanceImage: "/images/document-frame.png"
+    guidanceImage: "/assets/png-transparent-toyota-.png"
   };
 
   const handleCaptureDocument = (dataUrl: string) => {
@@ -166,6 +168,8 @@ function VerificationContent() {
   };
 
   const onSubmit = async (data: VerificationValues) => {
+
+   
     if (!isPhoneVerified) {
       toast({
         title: "Teléfono no verificado",
@@ -253,7 +257,6 @@ if (selectedLocation) {
   setIsLoading(false);
   return;
 }
-
       // --- Enviar solicitud al backend ---
       const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'; // Ajusta en .env.local
       console.log(BACKEND_URL,"sfsdf", formData)
@@ -269,15 +272,21 @@ if (selectedLocation) {
         throw new Error(errorData.message || `Error al enviar solicitud: ${res.status} ${res.statusText}`);
       }
 
-      const responseData = await res.json();
-      console.log('Solicitud de verificación enviada con éxito:', responseData);
+      await refreshUser();
+      console.log('Usuario tras refrescar:', useAuthStore.getState().user);
+
+      await new Promise((resolve) => {
+        router.refresh();
+        setTimeout(resolve, 100); // delay para evitar transición vacía
+      });
 
       toast({
-        title: "¡Solicitud enviada!",
-        description: responseData.message || "Tu solicitud de verificación ha sido enviada. Te contactaremos pronto.",
+        title: '¡Verificación completada!',
+        description: 'Tu cuenta ha sido actualizada exitosamente.',
       });
-      router.push('/profile'); // O redirige a donde corresponda
 
+      router.push('/');
+   
     } catch (error: any) {
       console.error("Error al enviar la solicitud:", error);
       toast({
@@ -538,8 +547,8 @@ if (selectedLocation) {
     label: "Documento de Identidad",
     description: "Toma una foto clara de tu documento oficial",
     required: true,
-    referenceImage: "/images/document-placeholder.jpg",
-    guidanceImage: "/images/document-frame.png",
+    referenceImage: "/assets/png-transparent.png",
+    guidanceImage: "/assets/png-transparent-toyota-.png",
     aspectRatio: "1/1" // Valor literal exacto
   }}
                   capturedPhoto={documentPhoto ? { 
@@ -745,7 +754,18 @@ if (selectedLocation) {
                     Revisa que toda la información esté completa y correcta
                   </p>
                 </div>
-                
+                <Button
+  type="submit"
+  disabled={isLoading}
+  size="lg"
+  className="w-full max-w-md"
+  onClick={() => {
+    // Este console.log se ejecutará al hacer clic, incluso si hay errores
+    console.log("Botón de envío clickeado");
+    console.log("Errores actuales de RHF:", form.formState.errors);
+    // handleSubmit aún no se ejecuta aquí, solo estamos registrando el estado
+  }}
+></Button>
                 <Button
                   type="submit"
                   disabled={isLoading}
@@ -780,8 +800,8 @@ if (selectedLocation) {
     label: "Documento de Identidad",
     description: "Toma una foto clara de tu documento oficial",
     required: true,
-    referenceImage: "/images/document-placeholder.jpg",
-    guidanceImage: "/images/document-frame.png",
+    referenceImage: "/assets/png-transparent-toyota-.png",
+    guidanceImage: "/assets/png-transparent-toyota-.png",
     aspectRatio: "1/1" // Valor literal exacto
   }}
       />
@@ -791,7 +811,7 @@ if (selectedLocation) {
 
 export default function ProfileVerificationPage() {
   return (
-    <ProtectedRoute requiredRoles={['Taller', 'Usuario', 'Administrador']}>
+    <ProtectedRoute requiredRoles={[]}>
       <VerificationContent />
     </ProtectedRoute>
   );

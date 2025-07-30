@@ -10,6 +10,7 @@ import { Gavel, TrendingUp, AlertCircle } from 'lucide-react';
 import { Auction } from '@/lib/types/auction';
 import { useAuctionStore } from '@/lib/store/auctions-store';
 import { useAuthStore } from '@/lib/store/auth-store';
+import { useRouter } from "next/navigation"
 
 interface BidFormProps {
   auction: Auction;
@@ -17,6 +18,7 @@ interface BidFormProps {
 }
 
 export function BidForm({ auction, onBidSuccess }: BidFormProps) {
+   const router = useRouter()
   const { placeBid, loading, error } = useAuctionStore();
   const { user , seLogueo} = useAuthStore();
   const [bidAmount, setBidAmount] = useState('');
@@ -80,9 +82,8 @@ export function BidForm({ auction, onBidSuccess }: BidFormProps) {
             Necesitas tener una cuenta para participar en las subastas
           </p>
           <Button 
-            onClick={() => window.location.href = '/auth/login'}
-            className="bg-orange-500 hover:bg-orange-600 text-white"
-          >
+            onClick={() => router.push('/auth/login')}
+            className="bg-orange-500 hover:bg-orange-600 text-white">
             Iniciar Sesión
           </Button>
         </CardContent>

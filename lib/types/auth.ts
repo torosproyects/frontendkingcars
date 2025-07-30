@@ -10,7 +10,7 @@ export interface User {
   verificationProgress?: number; // Progreso de verificación 0-100
 }
 
-export type UserRole = 'Administrador' | 'Usuario' | 'Taller' | 'SinRegistro';
+export type UserRole = 'Administrador' | 'Usuario' | 'Taller' | 'Visitante';
 
 export interface LoginCredentials {
   email: string;
@@ -27,7 +27,7 @@ export interface ResendCredentials {
   email: string;
   name: string;
 }
-export type ProfileStatus = 'logueado' | 'verificado' | 'visitante' | 'rechazado';
+export type ProfileStatus ='verificado' | 'sin verificacion' | 'rechazado';
 
 export interface RegisterData {
   name:string;

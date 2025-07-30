@@ -1,10 +1,10 @@
 "use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/lib/store/auth-store';
-import { Button } from '@/components/ui/button';
+import React, { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/lib/store/auth-store";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,42 +12,37 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { 
-  User, Settings, LogOut, Shield, Car, 
-  BarChart3, Users, Heart, FileText, 
-  Gavel, Plus, Edit, Key, 
-  CheckCircle, Clock, ShieldAlert
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  User, Settings, LogOut, ShieldAlert, Shield,
+  Car, BarChart3, Users, Heart, FileText, Gavel,
+  Plus, Edit, Key, CheckCircle, Clock,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
-type UserStatus = 'logueado' | 'verificado' | 'visitante';
+type UserStatus = "logueado" | "verificado" | "visitante";
+
+const STATUS_CONFIG = {
+  logueado: {
+    badge: <Badge variant="secondary" className="text-xs">Verificación Pendiente</Badge>,
+    icon: <Clock className="h-3 w-3 text-orange-500" />,
+  },
+  verificado: {
+    badge: <Badge variant="default" className="text-xs">Verificado</Badge>,
+    icon: <CheckCircle className="h-3 w-3 text-green-500" />,
+  },
+  visitante: {
+    badge: <Badge variant="outline" className="text-xs">Visitante</Badge>,
+    icon: <User className="h-3 w-3 text-gray-500" />,
+  },
+};
 
 const UserStatusIndicator = ({ status }: { status: UserStatus }) => {
-  const statusConfig = {
-    logueado: {
-      badge: <Badge variant="secondary" className="text-xs">Verificación Pendiente</Badge>,
-      icon: <Clock className="h-3 w-3 text-orange-500" />,
-      color: 'text-orange-600'
-    },
-    verificado: {
-      badge: <Badge variant="default" className="text-xs">Verificado</Badge>,
-      icon: <CheckCircle className="h-3 w-3 text-green-500" />,
-      color: 'text-green-600'
-    },
-    visitante: {
-      badge: <Badge variant="outline" className="text-xs">Visitante</Badge>,
-      icon: <User className="h-3 w-3 text-gray-500" />,
-      color: 'text-gray-600'
-    }
-  };
-
-  const config = statusConfig[status] || statusConfig.visitante;
-
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG.visitante;
   return (
     <div className="flex items-center justify-between">
       {config.badge}
@@ -56,35 +51,36 @@ const UserStatusIndicator = ({ status }: { status: UserStatus }) => {
   );
 };
 
-const UserAvatar = ({ 
-  user, 
-  status 
-}: { 
-  user: { name: string; avatar?: string }; 
-  status: UserStatus 
+const UserAvatar = ({
+  user,
+  status,
+}: {
+  user: { name: string; avatar?: string };
+  status: UserStatus;
 }) => {
-  const getInitials = (name: string) => {
-    return `${name.charAt(0)}`.toUpperCase();
-  };
+  const getInitials = (name?: string) => name?.charAt(0)?.toUpperCase() || 'U'
 
   return (
     <div className="relative">
       <Avatar className="h-10 w-10">
-        <AvatarImage src={user.avatar} alt={user.name} />
-        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+        {user.avatar ? (
+          <AvatarImage src={user.avatar} alt={user.name} />
+        ) : (
+          <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+        )}
       </Avatar>
-      {status === 'logueado' && (
+      {status === "logueado" && (
         <div className="absolute -top-1 -right-1 h-3 w-3 bg-orange-500 rounded-full border-2 border-background" />
       )}
     </div>
   );
 };
 
-const UserInfoSection = ({ 
-  user, 
-  status, 
-  progress 
-}: { 
+const UserInfoSection = ({
+  user,
+  status,
+  progress,
+}: {
   user: { name: string; email: string; avatar?: string; role?: string };
   status: UserStatus;
   progress: number;
@@ -93,20 +89,25 @@ const UserInfoSection = ({
     <div className="flex items-center space-x-3">
       <Avatar className="h-12 w-12">
         <AvatarImage src={user.avatar} alt={user.name} />
-        <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+        <AvatarFallback> {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}</AvatarFallback>
       </Avatar>
       <div className="flex-1">
-        <p className="text-sm font-medium leading-none truncate">{user.name}</p>
-        <p className="text-xs leading-none text-muted-foreground mt-1 truncate">
+       {user?.name && ( 
+          <p className="text-sm font-medium leading-none truncate">{user.name}  </p>
+        )}
+        <p
+          className="text-xs leading-none text-muted-foreground mt-1 truncate"
+          title={user.email}
+        >
           {user.email}
         </p>
       </div>
     </div>
-    
+
     <div className="space-y-2">
       <UserStatusIndicator status={status} />
-      
-      {status === 'logueado' && (
+
+      {status === "logueado" && (
         <div className="space-y-1">
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>Progreso de verificación</span>
@@ -115,8 +116,8 @@ const UserInfoSection = ({
           <Progress value={progress} className="h-2" />
         </div>
       )}
-      
-      {status === 'verificado' && user.role && (
+
+      {status === "verificado" && user.role && (
         <div className="text-xs text-muted-foreground">
           Rol: <span className="font-medium capitalize">{user.role}</span>
         </div>
@@ -125,12 +126,12 @@ const UserInfoSection = ({
   </div>
 );
 
-const MenuItem = ({ 
-  href, 
-  icon: Icon, 
+const MenuItem = ({
+  href,
+  icon: Icon,
   children,
   className,
-  onClick 
+  onClick,
 }: {
   href?: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -139,20 +140,20 @@ const MenuItem = ({
   onClick?: () => void;
 }) => {
   const content = (
-    <>
-      <Icon className="mr-2 h-4 w-4" />
+    <div className="flex items-center gap-2 text-sm">
+      <Icon className="h-4 w-4" />
       <span>{children}</span>
-    </>
+    </div>
   );
 
   return href ? (
     <DropdownMenuItem asChild className={className}>
-      <Link href={href} className="w-full">
+      <Link href={href} className="w-full py-2">
         {content}
       </Link>
     </DropdownMenuItem>
   ) : (
-    <DropdownMenuItem className={className} onClick={onClick}>
+    <DropdownMenuItem onClick={onClick} className={cn("py-2", className)}>
       {content}
     </DropdownMenuItem>
   );
@@ -161,105 +162,107 @@ const MenuItem = ({
 export function UserMenu() {
   const router = useRouter();
   const { toast } = useToast();
-  const { 
-    user, 
-    logout, 
-    getUserStatus, 
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const {
+    user,
+    logout,
+    getUserStatus,
     getVerificationProgress,
-    isAdmin, 
-    isDealer, 
-    isCustomer
+    isAdmin,
+    isDealer,
+    isCustomer,
+    isLoading,
   } = useAuthStore();
 
-  if (!user) return null;
+  if (isLoading || !user) return null;
 
   const userStatus = getUserStatus() as UserStatus;
   const progress = getVerificationProgress();
 
   const handleLogout = async () => {
+    setLoggingOut(true);
     try {
       await logout();
       toast({
         title: "Sesión cerrada",
         description: "Has cerrado sesión exitosamente.",
       });
-      router.push('/');
+      router.push("/");
     } catch (error) {
       toast({
         title: "Error",
         description: "Hubo un problema al cerrar sesión.",
         variant: "destructive",
       });
+    } finally {
+      setLoggingOut(false);
     }
   };
 
   return (
     <div className="flex items-center gap-2">
-      {/* Botón de verificación destacado solo para usuarios logueados */}
-      {userStatus === 'logueado' && (
-        <Button 
-          variant="default" 
+      {userStatus === "logueado" && (
+        <Button
+          variant="default"
           size="sm"
           className={cn(
-            "hidden sm:flex gap-2 items-center",
-            "bg-orange-600 hover:bg-orange-700 text-white",
+            "flex gap-2 items-center text-white",
+            "bg-orange-600 hover:bg-orange-700",
             "animate-pulse hover:animate-none transition-all"
           )}
           asChild
         >
           <Link href="/profile/verification">
             <ShieldAlert className="h-4 w-4" />
-            <span>Verificar Cuenta</span>
+            <span className="text-sm">Verificar Cuenta</span>
           </Link>
         </Button>
       )}
-      
-      {/* Menú desplegable */}
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="relative h-10 w-10 rounded-full hover:bg-accent/80 transition-colors"
             aria-label="Menú de usuario"
           >
             <UserAvatar user={user} status={userStatus} />
           </Button>
         </DropdownMenuTrigger>
-        
-        <DropdownMenuContent className="w-80" align="end" forceMount>
+
+        <DropdownMenuContent
+          className="w-[90vw] sm:w-80 max-w-sm"
+          align="end"
+          forceMount
+        >
           <DropdownMenuLabel className="font-normal">
-            <UserInfoSection 
-              user={user} 
-              status={userStatus} 
-              progress={progress} 
-            />
+            <UserInfoSection user={user} status={userStatus} progress={progress} />
           </DropdownMenuLabel>
-          
+
           <DropdownMenuSeparator />
-          
           <MenuItem href="/profile" icon={User}>Mi Perfil</MenuItem>
           <MenuItem href="/profile/edit" icon={Edit}>Editar Perfil</MenuItem>
           <MenuItem href="/profile/change-password" icon={Key}>Cambiar Contraseña</MenuItem>
-          
-          {/* Opciones para usuarios verificados */}
-          {userStatus === 'verificado' && (
+
+          {userStatus === "verificado" && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Funcionalidades
               </DropdownMenuLabel>
-              
+
               {isCustomer() && (
                 <>
                   <MenuItem href="/favorites" icon={Heart}>Mis Favoritos</MenuItem>
                   <MenuItem href="/inquiries" icon={FileText}>Mis Consultas</MenuItem>
                 </>
               )}
-              
+
               <MenuItem href="/auctions" icon={Gavel}>Ver Subastas</MenuItem>
               <MenuItem href="/my-auctions" icon={BarChart3}>Mis Subastas</MenuItem>
               <MenuItem href="/create-auction" icon={Plus}>Crear Subasta</MenuItem>
-              
+
               {isDealer() && (
                 <>
                   <DropdownMenuSeparator />
@@ -270,7 +273,7 @@ export function UserMenu() {
                   <MenuItem href="/dealer/leads" icon={Users}>Clientes Potenciales</MenuItem>
                 </>
               )}
-              
+
               {isAdmin() && (
                 <>
                   <DropdownMenuSeparator />
@@ -283,16 +286,16 @@ export function UserMenu() {
               )}
             </>
           )}
-          
+
           <DropdownMenuSeparator />
           <MenuItem href="/settings" icon={Settings}>Configuración</MenuItem>
           <DropdownMenuSeparator />
-          <MenuItem 
-            icon={LogOut} 
+          <MenuItem
+            icon={LogOut}
             className="text-destructive focus:text-destructive"
             onClick={handleLogout}
           >
-            Cerrar Sesión
+            {loggingOut ? "Cerrando..." : "Cerrar Sesión"}
           </MenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
