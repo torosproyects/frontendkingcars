@@ -1,8 +1,22 @@
-// Servicio WebSocket para subastas en tiempo real
-import { Auction, Bid } from '../types/auction';
+// services/WebSocketService.ts
+import { io, Socket } from 'socket.io-client';
+import { useEffect, useRef, useCallback, useState } from 'react';
+import type { Auction, Bid } from '../types/auction';
 
+// === INTERFACES ===
 export interface WebSocketMessage {
-  type: 'bid_placed' | 'auction_ended' | 'auction_started' | 'timer_update' | 'user_joined' | 'user_left';
+  type:
+    | 'bid_placed'
+    | 'auction_ended'
+    | 'auction_started'
+    | 'timer_update'
+    | 'user_joined'
+    | 'user_left'
+    // eventos locales del cliente (no vienen del servidor)
+    | 'socket_connected'
+    | 'socket_disconnected'
+    | 'socket_error'
+    | 'socket_reconnecting';
   data: any;
   auctionId?: string;
   timestamp: Date;
@@ -19,153 +33,173 @@ export interface TimerUpdateData {
   status: Auction['status'];
 }
 
+type ConnectionState = 'connecting' | 'connected' | 'disconnected';
+
+// === CLASE PRINCIPAL ===
 class WebSocketService {
-  private ws: WebSocket | null = null;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000;
+  private socket: Socket | null = null;
   private listeners: Map<string, Set<(data: any) => void>> = new Map();
-  private isConnecting = false;
-  private heartbeatInterval: NodeJS.Timeout | null = null;
 
-  // URL del WebSocket - en producción sería wss://api.carauction.com/ws
-  private readonly WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080';
+  // Reconexión con backoff exponencial + jitter
+  private reconnectAttempts = 0;
+  private readonly maxReconnectAttempts =
+    process.env.NODE_ENV === 'production' ? 8 : Infinity;
+  private reconnectTimers: Set<ReturnType<typeof setTimeout>> = new Set();
 
-  connect(userId?: string): Promise<void> {
+  // Usa HTTP/HTTPS para socket.io (no ws://wss://)
+  private readonly WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:5000';
+
+  // === Conectar ===
+  connect(): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.ws?.readyState === WebSocket.OPEN) {
+      if (this.socket?.connected) {
+        this.emitLocal('socket_connected');
         resolve();
         return;
       }
 
-      if (this.isConnecting) {
-        // Ya hay una conexión en progreso
-        setTimeout(() => {
-          if (this.ws?.readyState === WebSocket.OPEN) {
-            resolve();
-          } else {
-            reject(new Error('Conexión en progreso falló'));
-          }
-        }, 3000);
-        return;
+      // Si existe una instancia previa, primero limpiamos
+      if (this.socket) {
+        this.cleanupSocket();
       }
 
-      this.isConnecting = true;
-
       try {
-        const wsUrl = userId ? `${this.WS_URL}?userId=${userId}` : this.WS_URL;
-        this.ws = new WebSocket(wsUrl);
+        this.socket = io(this.WS_URL, {
+          withCredentials: true,
+          // Permite fallback; en ciertos hosts primero hace polling
+          transports: ['websocket', 'polling'],
+          reconnection: false, // hacemos reconexión manual para control fino
+          timeout: 10000,
+        });
 
-        this.ws.onopen = () => {
-          console.log('✅ WebSocket conectado');
-          this.isConnecting = false;
+        // Estados básicos
+        this.emitLocal('socket_reconnecting', { attempt: this.reconnectAttempts });
+
+        this.socket.on('connect', () => {
+          this.log('✅ Socket.IO conectado');
           this.reconnectAttempts = 0;
-          this.startHeartbeat();
+          this.emitLocal('socket_connected');
           resolve();
-        };
+        });
 
-        this.ws.onmessage = (event) => {
-          try {
-            const message: WebSocketMessage = JSON.parse(event.data);
-            message.timestamp = new Date(message.timestamp);
-            this.handleMessage(message);
-          } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
-          }
-        };
+        this.socket.on('disconnect', (reason) => {
+          this.log('🔌 Socket desconectado', { reason });
+          this.emitLocal('socket_disconnected', { reason });
+          this.scheduleReconnect();
+        });
 
-        this.ws.onclose = (event) => {
-          console.log('🔌 WebSocket desconectado:', event.code, event.reason);
-          this.isConnecting = false;
-          this.stopHeartbeat();
-          
-          // Reconectar automáticamente si no fue intencional
-          if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
-            this.scheduleReconnect(userId);
-          }
-        };
-
-        this.ws.onerror = (error) => {
-          console.error('❌ Error WebSocket:', error);
-          this.isConnecting = false;
+        this.socket.on('connect_error', (error) => {
+          this.log('❌ Error de conexión', { error });
+          this.emitLocal('socket_error', { message: error.message });
+          this.cleanupSocket(false);
+          this.scheduleReconnect();
+          // Rechazamos la primera conexión; posteriores serán gestionadas por reconexión
           reject(error);
-        };
+        });
 
-        // Timeout para la conexión
-        setTimeout(() => {
-          if (this.ws?.readyState !== WebSocket.OPEN) {
-            this.ws?.close();
-            this.isConnecting = false;
-            reject(new Error('Timeout de conexión WebSocket'));
+        // Reenvío de eventos del servidor
+        this.socket.onAny((event, data) => {
+          const message: WebSocketMessage = {
+            type: event as WebSocketMessage['type'],
+            data,
+            auctionId: data?.auctionId,
+            timestamp: new Date(),
+          };
+          this.handleMessage(message);
+        });
+
+        // Latido (mantener viva la conexión)
+        const pingInterval = setInterval(() => {
+          if (this.socket?.connected) this.socket.emit('ping');
+        }, 20000);
+        this.reconnectTimers.add(pingInterval);
+
+        // Reintento al volver al foreground (útil en móviles/ pestañas inactivas)
+        const onVisibility = () => {
+          if (document.visibilityState === 'visible' && !this.socket?.connected) {
+            this.scheduleReconnect(true);
           }
-        }, 10000);
+        };
+        document.addEventListener('visibilitychange', onVisibility);
+        // Guardamos para limpiar
+        const clearVisibility = () => document.removeEventListener('visibilitychange', onVisibility);
+        this.reconnectTimers.add(setTimeout(() => {}, 0)); // ancla para mantener el set
 
+        // Nota: no limpiamos aquí; cleanupSocket se encarga
       } catch (error) {
-        this.isConnecting = false;
+        this.log('❌ Error al crear conexión', { error });
         reject(error);
       }
     });
   }
 
-  private scheduleReconnect(userId?: string) {
-    this.reconnectAttempts++;
-    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1); // Backoff exponencial
-    
-    console.log(`🔄 Reintentando conexión en ${delay}ms (intento ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-    
-    setTimeout(() => {
-      this.connect(userId).catch(console.error);
-    }, delay);
-  }
-
-  private startHeartbeat() {
-    this.heartbeatInterval = setInterval(() => {
-      if (this.ws?.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ type: 'ping' }));
-      }
-    }, 30000); // Ping cada 30 segundos
-  }
-
-  private stopHeartbeat() {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
-    }
-  }
-
+  // === Mensajería ===
   private handleMessage(message: WebSocketMessage) {
+    // listeners por tipo
     const listeners = this.listeners.get(message.type);
     if (listeners) {
-      listeners.forEach(callback => callback(message.data));
+      listeners.forEach((callback) => callback(message.data));
     }
-
-    // Listeners globales
+    // listeners globales
     const globalListeners = this.listeners.get('*');
     if (globalListeners) {
-      globalListeners.forEach(callback => callback(message));
+      globalListeners.forEach((callback) => callback(message));
     }
   }
 
-  // Suscribirse a eventos
+  private emitLocal(type: WebSocketMessage['type'], data: any = {}) {
+    const message: WebSocketMessage = {
+      type,
+      data,
+      timestamp: new Date(),
+    };
+    this.handleMessage(message);
+  }
+
+  private scheduleReconnect(immediate = false) {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      this.log('⛔ Límite de reconexiones alcanzado');
+      return;
+    }
+    this.reconnectAttempts += 1;
+
+    // backoff exponencial con jitter
+    const base = Math.min(30000, 1000 * 2 ** (this.reconnectAttempts - 1));
+    const jitter = Math.floor(Math.random() * 800);
+    const delay = immediate ? 0 : base + jitter;
+
+    this.log('⏳ Reintentando conexión', { attempt: this.reconnectAttempts, delay });
+
+    const t = setTimeout(() => {
+      this.connect().catch(() => {
+        // el siguiente scheduleReconnect lo disparará connect_error/disconnect
+      });
+    }, delay);
+    this.reconnectTimers.add(t);
+    this.emitLocal('socket_reconnecting', {
+      attempt: this.reconnectAttempts,
+      inMs: delay,
+    });
+  }
+
+  private log(message: string, metadata?: Record<string, any>) {
+    if (process.env.NODE_ENV === 'production') {
+      console.log(JSON.stringify({ message, ...metadata }));
+    } else {
+      console.log(message, metadata);
+    }
+  }
+
   on(eventType: string, callback: (data: any) => void) {
     if (!this.listeners.has(eventType)) {
       this.listeners.set(eventType, new Set());
     }
     this.listeners.get(eventType)!.add(callback);
-
-    // Retornar función para desuscribirse
     return () => {
-      const listeners = this.listeners.get(eventType);
-      if (listeners) {
-        listeners.delete(callback);
-        if (listeners.size === 0) {
-          this.listeners.delete(eventType);
-        }
-      }
+      this.off(eventType, callback);
     };
   }
 
-  // Desuscribirse de eventos
   off(eventType: string, callback?: (data: any) => void) {
     if (callback) {
       const listeners = this.listeners.get(eventType);
@@ -180,142 +214,120 @@ class WebSocketService {
     }
   }
 
-  // Enviar mensaje
-  send(message: Omit<WebSocketMessage, 'timestamp'>) {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      const fullMessage: WebSocketMessage = {
-        ...message,
-        timestamp: new Date(),
-      };
-      this.ws.send(JSON.stringify(fullMessage));
+  send(event: string, data: any) {
+    if (this.socket?.connected) {
+      this.socket.emit(event, data);
       return true;
     }
-    console.warn('⚠️ WebSocket no está conectado, no se puede enviar mensaje');
+    this.log('⚠️ Socket no está conectado, no se puede enviar', { event });
     return false;
   }
 
-  // Unirse a una subasta específica
+  // API específica de subastas
   joinAuction(auctionId: string) {
-    return this.send({
-      type: 'user_joined',
-      data: { auctionId },
-      auctionId,
-    });
+    return this.send('join_auction', { auctionId });
   }
 
-  // Salir de una subasta específica
   leaveAuction(auctionId: string) {
-    return this.send({
-      type: 'user_left',
-      data: { auctionId },
-      auctionId,
-    });
+    return this.send('leave_auction', { auctionId });
   }
 
-  // Realizar puja
-  placeBid(auctionId: string, amount: number, userId: string, userName: string) {
-    return this.send({
-      type: 'bid_placed',
-      data: {
-        auctionId,
-        amount,
-        userId,
-        userName,
-      },
-      auctionId,
-    });
+  placeBid(auctionId: string, amount: number) {
+    // El backend deduce el usuario desde la cookie HttpOnly (auth_token)
+    return this.send('bid_placed', { auctionId, amount });
   }
 
-  // Desconectar
   disconnect() {
-    this.stopHeartbeat();
-    if (this.ws) {
-      this.ws.close(1000, 'Desconexión intencional');
-      this.ws = null;
-    }
-    this.listeners.clear();
-    this.reconnectAttempts = 0;
+    this.cleanupSocket();
   }
 
-  // Estado de conexión
+  private cleanupSocket(cleanTimers = true) {
+    if (this.socket) {
+      try {
+        this.socket.offAny();
+        this.socket.removeAllListeners();
+        this.socket.disconnect();
+      } catch {}
+      this.socket = null;
+    }
+    if (cleanTimers) {
+      this.reconnectTimers.forEach((timer) => clearTimeout(timer as any));
+      this.reconnectTimers.clear();
+    }
+  }
+
+  // Estado público correcto
   get isConnected(): boolean {
-    return this.ws?.readyState === WebSocket.OPEN;
+    return !!this.socket?.connected;
   }
 
-  get connectionState(): string {
-    if (!this.ws) return 'disconnected';
-    
-    switch (this.ws.readyState) {
-      case WebSocket.CONNECTING: return 'connecting';
-      case WebSocket.OPEN: return 'connected';
-      case WebSocket.CLOSING: return 'closing';
-      case WebSocket.CLOSED: return 'disconnected';
-      default: return 'unknown';
-    }
+  get connectionState(): ConnectionState {
+    if (this.socket?.connected) return 'connected';
+    if (this.socket) return 'connecting';
+    return 'disconnected';
   }
 }
 
-// Instancia singleton
+// === SINGLETON ===
 export const wsService = new WebSocketService();
 
-// Hook para usar WebSocket en componentes React
-import { useEffect, useRef } from 'react';
+// === HOOKS ===
 
-export function useWebSocket(eventType: string, callback: (data: any) => void, deps: any[] = []) {
-  const callbackRef = useRef(callback);
-  callbackRef.current = callback;
-
+// Helper para callbacks estables
+function useEventCallback<T extends (...args: any[]) => any>(fn: T): T {
+  const ref = useRef(fn);
   useEffect(() => {
-    const unsubscribe = wsService.on(eventType, (data) => {
-      callbackRef.current(data);
-    });
-
-    return unsubscribe;
-  }, [eventType, ...deps]);
+    ref.current = fn;
+  }, [fn]);
+  return useCallback((...args: Parameters<T>) => ref.current(...args), []) as T;
 }
 
-// Hook para conectar automáticamente
-export function useWebSocketConnection(userId?: string) {
-  const [connectionState, setConnectionState] = useState<string>('disconnected');
+// Hook para escuchar eventos (del servidor o locales)
+export function useWebSocket<T = any>(eventType: WebSocketMessage['type'] | '*', callback: (data: T) => void) {
+  const stableCallback = useEventCallback(callback);
+  useEffect(() => {
+    const unsubscribe = wsService.on(eventType, stableCallback);
+    return unsubscribe;
+  }, [eventType, stableCallback]);
+}
+
+// Hook para conectar automáticamente y reflejar estado en UI
+export function useWebSocketConnection() {
+  const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
-    const connect = async () => {
-      try {
-        setError(null);
-        setConnectionState('connecting');
-        await wsService.connect(userId);
-        if (mounted) {
-          setConnectionState('connected');
-        }
-      } catch (err) {
-        if (mounted) {
-          setError(err instanceof Error ? err.message : 'Error de conexión');
-          setConnectionState('disconnected');
-        }
-      }
+    const setState = (s: ConnectionState) => {
+      if (mounted) setConnectionState(s);
     };
 
-    connect();
+    const onConnected = () => setState('connected');
+    const onDisconnected = () => setState('disconnected');
+    const onError = (e: any) => {
+      setError(typeof e?.message === 'string' ? e.message : 'Socket error');
+      setState('disconnected');
+    };
+    const onReconnecting = () => setState('connecting');
 
-    // Listener para cambios de estado
-    const checkConnection = setInterval(() => {
-      if (mounted) {
-        setConnectionState(wsService.connectionState);
-      }
-    }, 1000);
+    // Conectar
+    wsService.connect().catch((err) => onError(err));
+
+    // Suscribir a eventos locales
+    const u1 = wsService.on('socket_connected', onConnected);
+    const u2 = wsService.on('socket_disconnected', onDisconnected);
+    const u3 = wsService.on('socket_error', onError);
+    const u4 = wsService.on('socket_reconnecting', onReconnecting);
+
+    // Estado inicial
+    setState(wsService.connectionState);
 
     return () => {
       mounted = false;
-      clearInterval(checkConnection);
-      wsService.disconnect();
+      u1(); u2(); u3(); u4();
     };
-  }, [userId]);
+  }, []);
 
   return { connectionState, error, isConnected: connectionState === 'connected' };
 }
-
-// React imports
-import { useState } from 'react';

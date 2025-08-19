@@ -340,8 +340,9 @@ export default function Header() {
                   </Link>
                 </NavigationMenuItem>
               )}
+
               {/* Menú de Subastas - Solo si tiene acceso */}
-              {canAccessFeature('auctions') && (
+              {/*canAccessFeature('auctions') && solo para pruebassssssssssssssssssss*/ (
                 <NavigationMenuItem>
                   <NavigationMenuTrigger>Subastas</NavigationMenuTrigger>
                   <NavigationMenuContent>
@@ -380,7 +381,7 @@ export default function Header() {
                         </Link>
                       </li>
                       <li>
-                        <Link href="/create-auction" legacyBehavior passHref>
+                        <Link href="/auctions/create" legacyBehavior passHref>
                           <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
                             <div className="text-sm font-medium leading-none">Crear Subasta</div>
                             <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">

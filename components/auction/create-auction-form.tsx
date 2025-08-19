@@ -1,5 +1,5 @@
 'use client';
-
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,7 @@ export function CreateAuctionForm({ currentUser, onSuccess, onCancel }: CreateAu
   const [selectedCar, setSelectedCar] = useState<CarType | null>(null);
   const [userCars, setUserCars] = useState<CarType[]>([]);
   const [loadingCars, setLoadingCars] = useState(true);
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState<CreateAuctionData>({
     carId: '',
     startPrice: 0,
@@ -54,7 +55,7 @@ export function CreateAuctionForm({ currentUser, onSuccess, onCancel }: CreateAu
     const loadUserCars = async () => {
       try {
         const cars = await ApiService.getUserCars(currentUser.id);
-        setUserCars(cars.filter(car => !car.isInAuction));
+        setUserCars(cars);
       } catch (error) {
         console.error('Error loading user cars:', error);
       } finally {
@@ -111,17 +112,33 @@ export function CreateAuctionForm({ currentUser, onSuccess, onCancel }: CreateAu
     setFormData(prev => ({
       ...prev,
       carId: car.id,
-      startPrice: Math.floor(car.estimatedValue * 0.6), // Precio sugerido: 60% del valor estimado
+      startPrice: Math.floor(car.estimatedValue), 
     }));
+    setVisitedTabs(new Set()); 
     setValidationErrors({});
+    
   };
 
   const handleNext = () => {
     if (step === 1 && validateStep1()) {
       setStep(2);
-    } else if (step === 2 && validateStep2()) {
+
+    } else 
+      if(step===2){
+        
+       if (visitedTabs.size < 2) {
+         
+            setValidationErrors(prev => ({
+            ...prev,
+              tabs: 'Por favor, revisa al menos dos secciones antes de continuar.'
+            }));
+         return;
+      }
+      if (validateStep2()) {
+        
       setStep(3);
     }
+  }
   };
 
   const handleSubmit = async () => {
@@ -139,9 +156,9 @@ export function CreateAuctionForm({ currentUser, onSuccess, onCancel }: CreateAu
     if (!selectedCar) return [];
     const estimated = selectedCar.estimatedValue;
     return [
-      { label: 'Conservador', value: Math.floor(estimated * 0.5), desc: '50% del valor estimado' },
-      { label: 'Equilibrado', value: Math.floor(estimated * 0.6), desc: '60% del valor estimado' },
-      { label: 'Agresivo', value: Math.floor(estimated * 0.7), desc: '70% del valor estimado' },
+      { label: 'Conservador', value: Math.floor(estimated * 0.7), desc: '70% del valor estimado' },
+      { label: 'Equilibrado', value: Math.floor(estimated * 1), desc: '100% del valor estimado' },
+      { label: 'Agresivo', value: Math.floor(estimated * 1.1), desc: '110% del valor estimado' },
     ];
   };
 
@@ -240,11 +257,13 @@ export function CreateAuctionForm({ currentUser, onSuccess, onCancel }: CreateAu
                   )}
                 >
                   <div className="flex gap-4">
-                    <img
-                      src={car.images[0]}
-                      alt={`${car.make} ${car.model}`}
-                      className="w-20 h-20 object-cover rounded-lg"
-                    />
+                    <Image
+  src={car.imagen}
+  alt={`${car.make} ${car.model}`}
+  width={80}
+  height={80}
+  className="object-cover rounded-lg"
+/>
                     <div className="flex-1">
                       <h3 className="font-semibold text-lg">
                         {car.year} {car.make} {car.model}
@@ -253,10 +272,10 @@ export function CreateAuctionForm({ currentUser, onSuccess, onCancel }: CreateAu
                         {car.mileage.toLocaleString()} km • {car.color}
                       </p>
                       <div className="flex items-center justify-between">
-                        <Badge variant={car.condition === 'excellent' ? 'default' : 'secondary'}>
-                          {car.condition === 'excellent' ? 'Excelente' : 
-                           car.condition === 'good' ? 'Bueno' : 
-                           car.condition === 'fair' ? 'Regular' : 'Malo'}
+                        <Badge variant={car.condition === 'nuevo' ? 'default' : 'secondary'}>
+                          {car.condition === 'nuevo' ? 'Excelente' : 
+                           car.condition === 'usado' ? 'Bueno' : 
+                           car.condition === 'reparado' ? 'Regular' : 'Malo'}
                         </Badge>
                         <span className="font-semibold text-green-600">
                           ${car.estimatedValue.toLocaleString()}
@@ -301,11 +320,13 @@ export function CreateAuctionForm({ currentUser, onSuccess, onCancel }: CreateAu
               {/* Selected Car Summary */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center gap-4">
-                  <img
-                    src={selectedCar.images[0]}
-                    alt={`${selectedCar.make} ${selectedCar.model}`}
-                    className="w-16 h-16 object-cover rounded-lg"
-                  />
+                  <Image
+  src={selectedCar.imagen}
+  alt={`${selectedCar.make} ${selectedCar.model}`}
+  width={64}
+  height={64}
+  className="object-cover rounded-lg"
+/>
                   <div>
                     <h3 className="font-semibold">
                       {selectedCar.year} {selectedCar.make} {selectedCar.model}
@@ -317,7 +338,13 @@ export function CreateAuctionForm({ currentUser, onSuccess, onCancel }: CreateAu
                 </div>
               </div>
 
-              <Tabs defaultValue="pricing" className="w-full">
+              <Tabs defaultValue="pricing" className="w-full"
+                    onValueChange={(value) => { setVisitedTabs(prev => new Set(prev).add(value));
+                    setValidationErrors(prev => {
+                    const { tabs, ...rest } = prev;
+                    return rest;});  
+                    }}
+               >
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="pricing">Precios</TabsTrigger>
                   <TabsTrigger value="timing">Tiempo</TabsTrigger>
@@ -504,6 +531,12 @@ export function CreateAuctionForm({ currentUser, onSuccess, onCancel }: CreateAu
                   </Alert>
                 </TabsContent>
               </Tabs>
+               {validationErrors.tabs && (
+          <Alert variant="destructive" className="mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{validationErrors.tabs}</AlertDescription>
+          </Alert>
+        )}
             </CardContent>
           </Card>
 
@@ -536,11 +569,13 @@ export function CreateAuctionForm({ currentUser, onSuccess, onCancel }: CreateAu
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">Vehículo</h4>
                   <div className="flex items-center gap-3">
-                    <img
-                      src={selectedCar.images[0]}
-                      alt={`${selectedCar.make} ${selectedCar.model}`}
-                      className="w-12 h-12 object-cover rounded-lg"
-                    />
+                    <Image
+  src={selectedCar.imagen}
+  alt={`${selectedCar.make} ${selectedCar.model}`}
+  width={48}
+  height={48}
+  className="object-cover rounded-lg"
+/>
                     <div>
                       <p className="font-medium">{selectedCar.year} {selectedCar.make} {selectedCar.model}</p>
                       <p className="text-sm text-gray-600">{selectedCar.mileage.toLocaleString()} km</p>
@@ -578,10 +613,13 @@ export function CreateAuctionForm({ currentUser, onSuccess, onCancel }: CreateAu
 
             {/* Error Display */}
             {error && (
+              <>
+              {console.log('Error en CreateAuctionForm:', error)}
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>{String(error)}</AlertDescription>
               </Alert>
+               </>
             )}
 
             {/* Actions */}

@@ -21,7 +21,6 @@ export interface Carro {
   year: number;
   precio: number;
   images: CarImage[];
-  // Puedes añadir más campos si los necesitas
   placa: string;
   kilometraje: number;
   categoria?: string;

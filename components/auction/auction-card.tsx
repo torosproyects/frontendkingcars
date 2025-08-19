@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -62,15 +63,17 @@ export function AuctionCard({ auction, onViewDetails }: AuctionCardProps) {
     <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] bg-white/80 backdrop-blur-sm border border-white/20">
       <div className="relative">
         <div className="relative h-48 overflow-hidden bg-gray-100">
-          <img
-            src={auction.car.images[0] || 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=800'}
-            alt={`${auction.car.make} ${auction.car.model}`}
-            className={cn(
-              'w-full h-full object-cover transition-all duration-500',
-              imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-110'
-            )}
-            onLoad={() => setImageLoaded(true)}
-          />
+          <Image
+        src={auction.car.images[0] || 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=800'}
+        alt={`${auction.car.make} ${auction.car.model}`}
+        fill
+        className={cn(
+          'object-cover transition-all duration-500',
+          imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-110'
+        )}
+        onLoadingComplete={() => setImageLoaded(true)}
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+      />
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
         </div>
 

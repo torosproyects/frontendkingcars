@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -179,12 +180,14 @@ export default function AuctionDetailPage() {
             {/* Image Gallery */}
             <Card className="overflow-hidden bg-white/80 backdrop-blur-sm border-white/20">
               <CardContent className="p-0">
-                <div className="relative">
-                  <img
-                    src={car.images[selectedImageIndex] || car.images[0]}
-                    alt={`${car.make} ${car.model}`}
-                    className="w-full h-96 object-cover"
-                  />
+                <div className="relative w-full h-96">
+  <Image
+    src={car.images[selectedImageIndex] || car.images[0]}
+    alt={`${car.make} ${car.model}`}
+    fill
+    className="object-cover"
+    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 100vw"
+  />
                   <Badge 
                     className={`absolute top-4 left-4 ${
                       currentAuction.status === 'active' 
@@ -213,10 +216,12 @@ export default function AuctionDetailPage() {
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
-                          <img
+                          <Image
                             src={image}
                             alt={`Vista ${index + 1}`}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
+                            sizes="100vw"
                           />
                         </button>
                       ))}

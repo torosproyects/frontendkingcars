@@ -1,8 +1,10 @@
+// React import
+import React from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Auction, AuctionState, AuctionActions, Bid, CreateAuctionData, Car } from '../types/auction';
-import { ApiService } from "@/lib/service/api-service";
-import { wsService, WebSocketMessage, BidPlacedData, TimerUpdateData } from '@/lib/service//websocket-service';
+import { wsService, WebSocketMessage, BidPlacedData, TimerUpdateData } from '../service/websocket-service';
+import { ApiService } from '../service/api-service';
 
 // Tipos para notificaciones
 export interface AuctionNotification {
@@ -81,7 +83,7 @@ export const useAuctionStore = create<ExtendedAuctionState & ExtendedAuctionActi
         set({ connectionStatus: 'connecting' });
         
         try {
-          await wsService.connect(userId);
+          await wsService.connect();
           set({ connectionStatus: 'connected' });
 
           // Configurar listeners de WebSocket
@@ -170,13 +172,17 @@ export const useAuctionStore = create<ExtendedAuctionState & ExtendedAuctionActi
             const { auction } = data;
             
             set((state) => {
+               const endedAuction: Auction = { 
+            ...auction, 
+            status: 'ended' // Aseguramos que sea literal 'ended'
+        };
               const updatedAuctions = state.auctions.map((a) =>
-                a.id === auction.id ? { ...auction, status: 'ended' as const} : a
-              );
+            a.id === endedAuction.id ? endedAuction : a
+        );
 
-              const updatedCurrentAuction = state.currentAuction?.id === auction.id
-                ? { ...auction, status: 'ended' as const }
-                : state.currentAuction;
+              const updatedCurrentAuction = state.currentAuction?.id === endedAuction.id
+            ? endedAuction
+            : state.currentAuction;
 
               return {
                 auctions: updatedAuctions,
@@ -288,7 +294,7 @@ export const useAuctionStore = create<ExtendedAuctionState & ExtendedAuctionActi
         try {
           // Intentar por WebSocket primero
           if (wsService.isConnected) {
-            const success = wsService.placeBid(auctionId, amount, userId, userName);
+            const success = wsService.placeBid(auctionId, amount);
             if (success) {
               set({ loading: false });
               return; // WebSocket manejará la actualización
@@ -299,38 +305,32 @@ export const useAuctionStore = create<ExtendedAuctionState & ExtendedAuctionActi
           const newBid = await ApiService.placeBid(auctionId, amount, userId, userName);
           
           // Actualizar estado local
-          set((state) => {
-            const updatedAuctions = state.auctions.map((auction) =>
-              auction.id === auctionId
-                ? {
-                    ...auction,
-                    currentBid: amount,
-                    bidCount: auction.bidCount + 1,
-                    highestBidder: userId,
-                    highestBidderName: userName,
-                    bids: [newBid, ...auction.bids],
-                  }
-                : auction
-            );
-
-            const updatedCurrentAuction = state.currentAuction?.id === auctionId
-              ? {
-                  ...state.currentAuction,
-                  currentBid: amount,
-                  bidCount: state.currentAuction.bidCount + 1,
-                  highestBidder: userId,
-                  highestBidderName: userName,
-                  bids: [newBid, ...state.currentAuction.bids],
-                }
-              : state.currentAuction;
-
-            return {
-              auctions: updatedAuctions,
-              currentAuction: updatedCurrentAuction,
-              userBids: [newBid, ...state.userBids],
-              loading: false,
-            };
-          });
+          set((state) => ({
+  auctions: state.auctions.map((auction) =>
+    auction.id === auctionId
+      ? {
+          ...auction,
+          currentBid: amount,
+          bidCount: auction.bidCount + 1,
+          highestBidder: userId,
+          highestBidderName: userName,
+          bids: [newBid as Bid, ...auction.bids],
+        }
+      : auction
+  ),
+  currentAuction: state.currentAuction?.id === auctionId
+    ? {
+        ...state.currentAuction,
+        currentBid: amount,
+        bidCount: state.currentAuction.bidCount + 1,
+        highestBidder: userId,
+        highestBidderName: userName,
+        bids: [newBid as Bid, ...state.currentAuction.bids],
+      }
+    : state.currentAuction,
+  userBids: [newBid as Bid, ...state.userBids],
+  loading: false,
+}));
 
           // Agregar notificación
           get().addNotification({
@@ -425,19 +425,30 @@ export const useAuctionStore = create<ExtendedAuctionState & ExtendedAuctionActi
         try {
           const newAuction = await ApiService.createAuction(auctionData, userId, userName);
           
-          set((state) => ({
-            auctions: [newAuction, ...state.auctions],
-            loading: false,
-          }));
-
+          set((state) => {
+            if (!newAuction) {
+                // Manejar el caso de newAuction nulo
+                return { loading: false };
+              }
+            
+              return {
+    auctions: [newAuction, ...state.auctions],
+    loading: false,
+              };
+            });
           const addNotification = get().addNotification;
-          addNotification({
-            type: 'new_auction',
-            title: '🚗 Subasta creada',
-            message: `Tu subasta de ${newAuction.car.make} ${newAuction.car.model} está activa`,
-            auctionId: newAuction.id,
-            priority: 'medium',
-          });
+         if (newAuction) {
+          console.log(newAuction.car)
+          console.log(newAuction.car.make)
+          console.log(newAuction.car.model)
+  addNotification({
+    type: 'new_auction',
+    title: '🚗 Subasta creada',
+    message: `Tu subasta de ${newAuction.car.make} ${newAuction.car.model} está activa`,
+    auctionId: newAuction.id,
+    priority: 'medium',
+  });
+}
 
         } catch (error) {
           set({ 
@@ -532,5 +543,3 @@ export const useAuctionWebSocket = (userId?: string) => {
   return { connectionStatus };
 };
 
-// React import
-import React from 'react';
