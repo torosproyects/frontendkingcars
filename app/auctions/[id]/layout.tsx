@@ -10,14 +10,8 @@ export async function generateStaticParams() {
   } catch (error) {
     console.error('Error generating static params:', error);
     // Fallback a IDs estáticos si la API falla
-    return [
-      { id: 'auction-1' },
-      { id: 'auction-2' },
-      { id: 'auction-3' },
-      { id: 'auction-4' },
-      { id: 'auction-5' },
-      { id: 'auction-1753114493115' },
-    ];
+    return []
+    ;
   }
 }
 

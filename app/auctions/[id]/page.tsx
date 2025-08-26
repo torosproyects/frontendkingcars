@@ -127,6 +127,7 @@ export default function AuctionDetailPage() {
   }
 
   const { car } = currentAuction;
+  console.log(car)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
@@ -182,7 +183,7 @@ export default function AuctionDetailPage() {
               <CardContent className="p-0">
                 <div className="relative w-full h-96">
   <Image
-    src={car.images[selectedImageIndex] || car.images[0]}
+    src={car.imagen}
     alt={`${car.make} ${car.model}`}
     fill
     className="object-cover"
@@ -217,7 +218,7 @@ export default function AuctionDetailPage() {
                           }`}
                         >
                           <Image
-                            src={image}
+                            src=""
                             alt={`Vista ${index + 1}`}
                             fill
                             className="object-cover"

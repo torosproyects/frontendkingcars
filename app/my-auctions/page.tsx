@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ArrowLeft, 
@@ -25,23 +26,24 @@ import { cn } from '@/lib/utils';
 
 export default function MyAuctionsPage() {
   const router = useRouter();
-  const { auctions, getUserAuctions } = useAuctionStore();
-  const { user, seLogueo } = useAuthStore();
+  const { getUserAuctions,fetchAuctions} = useAuctionStore();
+  const { user,seLogueo } = useAuthStore();
   const [selectedTab, setSelectedTab] = useState('all');
-  const [userAuctions, setUserAuctions] = useState<Auction[]>([]);
 
-  // Verificar autenticación y cargar subastas del usuario
+  // Verificar autenticación
   useEffect(() => {
     if (!seLogueo) {
       router.push('/auth/login');
-    } else if (user) {
-      setUserAuctions(getUserAuctions(user.id));
     }
-  }, [seLogueo, router, user, getUserAuctions]);
+      fetchAuctions(); // 🔥 Esto es lo que faltaba
+    
+  }, [seLogueo, router,fetchAuctions]);
 
   if (!seLogueo) {
     return null; // Evitar flash de contenido
   }
+  
+  const userAuctions = getUserAuctions(user?.id ?? 'mal en my auctions');
 
   const getStatusColor = (status: Auction['status']) => {
     switch (status) {
@@ -71,15 +73,15 @@ export default function MyAuctionsPage() {
 
   const filterAuctions = (status?: string) => {
     if (!status || status === 'all') return userAuctions;
-    return userAuctions.filter((auction: Auction) => auction.status === status);
+    return userAuctions.filter(auction => auction.status === status);
   };
 
   const getTabCounts = () => {
     return {
       all: userAuctions.length,
-      active: userAuctions.filter((a: Auction) => a.status === 'active').length,
-      upcoming: userAuctions.filter((a: Auction) => a.status === 'upcoming').length,
-      ended: userAuctions.filter((a: Auction) => a.status === 'ended').length,
+      active: userAuctions.filter(a => a.status === 'active').length,
+      upcoming: userAuctions.filter(a => a.status === 'upcoming').length,
+      ended: userAuctions.filter(a => a.status === 'ended').length,
     };
   };
 
@@ -105,8 +107,8 @@ export default function MyAuctionsPage() {
 
   const getTotalEarnings = () => {
     return userAuctions
-      .filter((auction: Auction) => auction.status === 'ended' && auction.currentBid > (auction.reservePrice || 0))
-      .reduce((total: number, auction: Auction) => total + auction.currentBid, 0);
+      .filter(auction => auction.status === 'ended' && auction.currentBid > (auction.reservePrice || 0))
+      .reduce((total, auction) => total + auction.currentBid, 0);
   };
 
   return (
@@ -207,17 +209,20 @@ export default function MyAuctionsPage() {
           {['all', 'active', 'upcoming', 'ended'].map((tab) => (
             <TabsContent key={tab} value={tab} className="mt-6">
               <div className="space-y-4">
-                {filterAuctions(tab).map((auction: Auction) => (
+                {filterAuctions(tab).map((auction) => (
                   <Card key={auction.id} className="bg-white/80 backdrop-blur-sm border-white/20 hover:shadow-lg transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex flex-col md:flex-row gap-6">
                         {/* Car Image */}
                         <div className="relative">
-                          <img
-                            src={auction.car.images[0]}
+                          <Image
+                            src={auction.car.imagen}
                             alt={`${auction.car.make} ${auction.car.model}`}
-                            className="w-full md:w-32 h-32 object-cover rounded-lg"
-                          />
+                            width={128} 
+                            height={128}
+                            objectFit="cover"
+                            className="w-full md:w-32 h-32 rounded-lg"
+                            />
                           <Badge className={cn("absolute top-2 left-2", getStatusColor(auction.status))}>
                             {getStatusText(auction.status)}
                           </Badge>

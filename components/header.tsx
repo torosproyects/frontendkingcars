@@ -21,7 +21,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Menu, User, Upload, Gavel, Shield, AlertTriangle } from "lucide-react";
+import { Menu, User, Upload, Gavel, Shield, AlertTriangle, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { UserMenu } from "@/components/auth/user-menu";
@@ -44,6 +44,7 @@ export default function Header() {
 
   // Estado para controlar el Sheet de forma explícita
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+  const [isVentasOpen, setIsVentasOpen] = React.useState(false);
 
   // Función para cerrar el Sheet
   const closeSheet = () => {
@@ -108,60 +109,72 @@ export default function Header() {
                 >
                   Catálogo
                 </Link>
-                {/* Opciones que requieren verificación */}
-                {canAccessFeature('upload-car') ? (
-                  <Link
-                    href="/upload-car"
-                    onClick={handleSheetLinkClick} // Cerrar al hacer clic
-                    className={cn(
-                      "text-lg font-medium transition-colors hover:text-primary",
-                      pathname === "/upload-car" ? "text-primary" : "text-muted-foreground"
-                    )}
-                  >
-                    Subir Mi Auto
-                  </Link>
-                ) : userStatus === 'logueado' ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-medium text-muted-foreground">Subir Mi Auto</span>
-                    <Badge variant="outline" className="text-xs">
-                      <Shield className="h-3 w-3 mr-1" />
-                      Requiere Verificación
-                    </Badge>
-                  </div>
-                ) : null}
-                {/* Subastas */}
-                {canAccessFeature('auctions') ? (
-                  <>
-                    <Link
-                      href="/auctions"
-                      onClick={handleSheetLinkClick} // Cerrar al hacer clic
-                      className={cn(
-                        "text-lg font-medium transition-colors hover:text-primary",
-                        pathname.startsWith("/auctions") ? "text-primary" : "text-muted-foreground"
-                      )}
-                    >
-                      Subastas
-                    </Link>
-                    <Link
-                      href="/my-auctions"
-                      onClick={handleSheetLinkClick} // Cerrar al hacer clic
-                      className={cn(
-                        "text-lg font-medium transition-colors hover:text-primary",
-                        pathname === "/my-auctions" ? "text-primary" : "text-muted-foreground"
-                      )}
-                    >
-                      Mis Subastas
-                    </Link>
-                  </>
-                ) : userStatus === 'logueado' ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-medium text-muted-foreground">Subastas</span>
-                    <Badge variant="outline" className="text-xs">
-                      <Shield className="h-3 w-3 mr-1" />
-                      Requiere Verificación
-                    </Badge>
-                  </div>
-                ) : null}
+                    <div className="flex flex-col">
+      <button
+        type="button"
+        className="flex items-center justify-between w-full text-lg font-medium text-muted-foreground hover:text-primary transition-colors"
+        onClick={() => setIsVentasOpen(!isVentasOpen)} // Controla el estado
+      >
+        Ventas
+        <ChevronDown
+          className={`h-4 w-4 transition-transform duration-200 ${isVentasOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {/* Submenú: Vender Auto, Ver Subastas, Mis Subastas */}
+      {isVentasOpen && (
+        <div className="flex flex-col gap-2 mt-2 ml-2 border-l-2 border-gray-200 pl-2">
+          {/* Vender Auto */}
+          {canAccessFeature('upload-car') ? (
+            <Link
+              href="/upload-car"
+              onClick={handleSheetLinkClick}
+              className="text-base transition-colors hover:text-primary"
+            >
+              Vender Auto
+            </Link>
+          ) : userStatus === 'logueado' ? (
+            <span className="text-base text-muted-foreground flex items-center gap-1">
+              Vender Auto
+              <Badge variant="outline" className="text-xs">
+                <Shield className="h-3 w-3 mr-1" />
+                Requiere Verificación
+              </Badge>
+            </span>
+          ) : null}
+
+          {/* Ver Subastas */}
+          {canAccessFeature('auctions') ? (
+            <Link
+              href="/auctions"
+              onClick={handleSheetLinkClick}
+              className="text-base transition-colors hover:text-primary"
+            >
+              Ver Subastas
+            </Link>
+          ) : userStatus === 'logueado' ? (
+            <span className="text-base text-muted-foreground flex items-center gap-1">
+              Subastas
+              <Badge variant="outline" className="text-xs">
+                <Shield className="h-3 w-3 mr-1" />
+                Requiere Verificación
+              </Badge>
+            </span>
+          ) : null}
+
+          {/* Mis Subastas */}
+          {canAccessFeature('auctions') && (
+            <Link
+              href="/my-auctions"
+              onClick={handleSheetLinkClick}
+              className="text-base transition-colors hover:text-primary"
+            >
+              Mis Subastas
+              </Link>
+          )}
+        </div>
+      )}
+    </div>
                 {/* Enlaces específicos por rol - Solo para usuarios verificados */}
                 {userStatus === 'verificado' && isAdmin() && (
                   <Link

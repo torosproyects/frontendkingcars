@@ -83,6 +83,7 @@ export const useAuctionStore = create<ExtendedAuctionState & ExtendedAuctionActi
         set({ connectionStatus: 'connecting' });
         
         try {
+          console.log("llama a la conxion store")
           await wsService.connect();
           set({ connectionStatus: 'connected' });
 
@@ -438,9 +439,7 @@ export const useAuctionStore = create<ExtendedAuctionState & ExtendedAuctionActi
             });
           const addNotification = get().addNotification;
          if (newAuction) {
-          console.log(newAuction.car)
-          console.log(newAuction.car.make)
-          console.log(newAuction.car.model)
+         
   addNotification({
     type: 'new_auction',
     title: '🚗 Subasta creada',
@@ -461,7 +460,7 @@ export const useAuctionStore = create<ExtendedAuctionState & ExtendedAuctionActi
 
       getUserAuctions: (userId: string) => {
         const state = get();
-        return state.auctions.filter(auction => auction.sellerId === userId);
+         return state.auctions.filter(auction => String(auction.sellerId) === userId);
       },
 
       // Gestión de notificaciones

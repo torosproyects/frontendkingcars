@@ -186,7 +186,7 @@ class WebSocketService {
     if (process.env.NODE_ENV === 'production') {
       console.log(JSON.stringify({ message, ...metadata }));
     } else {
-      console.log(message, metadata);
+      console.log(message+" aqui se separa "+ metadata);
     }
   }
 
