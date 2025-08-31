@@ -26,8 +26,6 @@ import { BidForm } from '@/components/auction/bid-form';
 import { BidHistory } from '@/components/auction/bid-history';
 import { useAuctionStore, useAuctionWebSocket } from '@/lib/store/auctions-store';
 import { useAuthStore} from '@/lib/store/auth-store';
-import { Auction, Bid } from '@/lib/types/auction';
-import { ApiService } from '@/lib/service/api-service';
 
 
 export default function AuctionDetailPage() {
@@ -46,7 +44,7 @@ export default function AuctionDetailPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   
   // Conectar WebSocket
-  const { connectionStatus } = useAuctionWebSocket(user?.id);
+ // const { connectionStatus } = useAuctionWebSocket(user?.id);
 
   const auctionId = params.id as string;
 
@@ -55,7 +53,7 @@ export default function AuctionDetailPage() {
       fetchAuction(auctionId);
       
       // Unirse a la subasta para recibir actualizaciones en tiempo real
-      if (seLogueo) {
+    /*  if (seLogueo) {
         joinAuction(auctionId);
       }
       
@@ -64,9 +62,9 @@ export default function AuctionDetailPage() {
         if (seLogueo) {
           leaveAuction(auctionId);
         }
-      };
+      };*/
     }
-  }, [auctionId, fetchAuction, joinAuction, leaveAuction, seLogueo]);
+  }, [auctionId, fetchAuction]);
 
   const handleWatchToggle = useCallback(async () => {
     if (!currentAuction || !seLogueo) return;
@@ -79,19 +77,7 @@ export default function AuctionDetailPage() {
     }
   }, [currentAuction, toggleWatch, user, seLogueo]);
 
-  const handleBidSuccess = useCallback(() => {
-    // Refrescar datos de la subasta después de una puja exitosa
-    if (auctionId) {
-      fetchAuction(auctionId);
-    }
-  }, [auctionId, fetchAuction]);
-
-  const handleAuctionEnd = useCallback(() => {
-    // Refrescar datos cuando termine la subasta
-    if (auctionId) {
-      fetchAuction(auctionId);
-    }
-  }, [auctionId, fetchAuction]);
+ 
 
   if (loading || !currentAuction) {
     return (
@@ -127,7 +113,7 @@ export default function AuctionDetailPage() {
   }
 
   const { car } = currentAuction;
-  console.log(car)
+ 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
@@ -154,7 +140,7 @@ export default function AuctionDetailPage() {
                 className={
                   currentAuction.isWatched 
                     ? 'h-4 w-4 fill-red-500 text-red-500' 
-                    : 'h-4 w-4 text-gray-600'
+                    : 'h-4 w-4 text-black-600'
                 }
               />
               {currentAuction.isWatched ? 'Observando' : 'Observar'}
@@ -164,15 +150,7 @@ export default function AuctionDetailPage() {
             </Button>
           </div>
           
-          {/* Connection Status */}
-          {connectionStatus !== 'connected' && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-yellow-800 text-sm">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                {connectionStatus === 'connecting' ? 'Conectando...' : 'Modo offline - Datos pueden no estar actualizados'}
-              </div>
-            </div>
-          )}
+        
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -335,8 +313,7 @@ export default function AuctionDetailPage() {
               <AuctionCountdown
                 endTime={currentAuction.endTime}
                 auctionId={currentAuction.id}
-                onTimeUp={handleAuctionEnd}
-              />
+               />
             )}
 
             {/* Current Bid Info */}
@@ -383,8 +360,7 @@ export default function AuctionDetailPage() {
             {/* Bid Form */}
             <BidForm
               auction={currentAuction}
-              onBidSuccess={handleBidSuccess}
-            />
+             />
 
             {/* Bid History */}
             <BidHistory

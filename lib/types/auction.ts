@@ -63,6 +63,8 @@ export interface AuctionState {
   userAuctions: Auction[]; // Subastas del usuario
   loading: boolean;
   error: string | null;
+  userCars: Car[];
+  loadingCars: boolean;
 }
 
 export interface AuctionActions {
@@ -72,8 +74,19 @@ export interface AuctionActions {
   watchAuction: (auctionId: string) => void;
   unwatchAuction: (auctionId: string) => void;
   updateAuctionStatus: (auctionId: string, status: Auction['status']) => void;
-  createAuction: (auctionData: CreateAuctionData, userId: string, userName: string) => Promise<void>;
+  createAuction: (auctionData: CreateAuctionData, userId: string, userName: string, onSuccessCallback?: () => void) => Promise<void>;
   getUserAuctions: (userId: string) => Auction[];
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  loadUserCars: (userId: string) => Promise<void>;
+}
+export interface AuctionNotification {
+  id: string;
+  type: 'bid_placed' | 'auction_ending' | 'auction_ended' | 'outbid' | 'won_auction' | 'new_auction';
+  title: string;
+  message: string;
+  timestamp: Date;
+  auctionId?: string;
+  read: boolean;
+  priority: 'low' | 'medium' | 'high';
 }

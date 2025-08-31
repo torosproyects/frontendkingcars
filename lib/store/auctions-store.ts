@@ -3,7 +3,7 @@ import React from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Auction, AuctionState, AuctionActions, Bid, CreateAuctionData, Car } from '../types/auction';
-import { wsService, WebSocketMessage, BidPlacedData, TimerUpdateData } from '../service/websocket-service';
+import { wsService, BidPlacedData, TimerUpdateData } from '../service/websocket-service';
 import { ApiService } from '../service/api-service';
 
 // Tipos para notificaciones
@@ -69,6 +69,8 @@ export const useAuctionStore = create<ExtendedAuctionState & ExtendedAuctionActi
       lastUpdate: null,
       connectionStatus: 'disconnected',
       activeAuctionId: null,
+      userCars: [],
+      loadingCars: false,
 
       // Acciones básicas
       setAuctions: (auctions) => set({ auctions, lastUpdate: new Date() }),
@@ -77,6 +79,17 @@ export const useAuctionStore = create<ExtendedAuctionState & ExtendedAuctionActi
       setError: (error) => set({ error }),
       setConnectionStatus: (status) => set({ connectionStatus: status }),
       setActiveAuction: (auctionId) => set({ activeAuctionId: auctionId }),
+      loadUserCars: async (userId) => {
+      set({ loadingCars: true, error: null });
+      try {
+        const cars = await ApiService.getUserCars(userId);
+        set({ userCars: cars });
+      } catch (err) {
+        set({ error: 'Failed to load user cars.', userCars: [] });
+      } finally {
+        set({ loadingCars: false });
+      }
+    },
 
       // WebSocket Connection
       connectWebSocket: async (userId: string) => {
@@ -296,6 +309,7 @@ export const useAuctionStore = create<ExtendedAuctionState & ExtendedAuctionActi
           // Intentar por WebSocket primero
           if (wsService.isConnected) {
             const success = wsService.placeBid(auctionId, amount);
+           
             if (success) {
               set({ loading: false });
               return; // WebSocket manejará la actualización
@@ -421,41 +435,48 @@ export const useAuctionStore = create<ExtendedAuctionState & ExtendedAuctionActi
         }));
       },
 
-      createAuction: async (auctionData: CreateAuctionData, userId: string, userName: string) => {
+      createAuction: async (auctionData: CreateAuctionData, userId: string, userName: string, onSuccessCallback) => {
         set({ loading: true, error: null });
-        try {
-          const newAuction = await ApiService.createAuction(auctionData, userId, userName);
-          
-          set((state) => {
-            if (!newAuction) {
-                // Manejar el caso de newAuction nulo
-                return { loading: false };
-              }
-            
-              return {
-    auctions: [newAuction, ...state.auctions],
-    loading: false,
-              };
-            });
-          const addNotification = get().addNotification;
-         if (newAuction) {
-         
-  addNotification({
-    type: 'new_auction',
-    title: '🚗 Subasta creada',
-    message: `Tu subasta de ${newAuction.car.make} ${newAuction.car.model} está activa`,
-    auctionId: newAuction.id,
-    priority: 'medium',
-  });
-}
+       try {
+        const newAuction = await ApiService.createAuction(auctionData, userId, userName);
+        
+        // Si la creación de la subasta fue exitosa...
+        if (newAuction) {
+            // 1. Actualiza el estado global con la nueva subasta.
+            set((state) => ({
+                auctions: [newAuction, ...state.auctions],
+                loading: false,
+            }));
 
-        } catch (error) {
-          set({ 
+            // 2. Llama a la acción para añadir la notificación.
+            const addNotification = get().addNotification;
+            addNotification({
+                type: 'new_auction',
+                title: '🚗 Subasta creada',
+                message: `Tu subasta de ${newAuction.car.make} ${newAuction.car.model} está activa`,
+                auctionId: newAuction.id,
+                priority: 'medium',
+            });
+            
+            // 3. Ejecuta el callback de éxito si se proporcionó.
+            if (onSuccessCallback) {
+                onSuccessCallback();
+            }
+        } else {
+            // Manejar el caso donde la API devuelve un objeto nulo o indefinido
+            set({
+                loading: false,
+                error: 'La subasta no pudo ser creada. Inténtalo de nuevo.'
+            });
+        }
+    } catch (error) {
+        // En caso de error de la API
+        set({ 
             loading: false, 
             error: error instanceof Error ? error.message : 'Error al crear la subasta' 
-          });
-          throw error;
-        }
+        });
+        throw error;
+    } 
       },
 
       getUserAuctions: (userId: string) => {

@@ -11,6 +11,7 @@ export interface User {
 }
 
 export type UserRole = 'Administrador' | 'Usuario' | 'Taller' | 'Visitante';
+export type ProfileStatus ='verificado' | 'sin verificacion' | 'rechazado';
 
 export interface LoginCredentials {
   email: string;
@@ -27,7 +28,7 @@ export interface ResendCredentials {
   email: string;
   name: string;
 }
-export type ProfileStatus ='verificado' | 'sin verificacion' | 'rechazado';
+
 
 export interface RegisterData {
   name:string;

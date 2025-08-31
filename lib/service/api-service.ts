@@ -76,11 +76,13 @@ export class ApiService {
      try {
       const response = await fetchWithTimeout(`${API_BASE_URL}/auctions/${auctionId}/bids`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, userId, userName }),
       });
       if (!response.ok) throw new Error('Error al pujar');
-      return await response.json();
+      const{bid}=await response.json();
+      return bid 
     } catch (error) {
       console.error('Error al pujar:', error);
       return null;
@@ -113,7 +115,8 @@ export class ApiService {
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Error al crear subasta');
-      return await response.json();
+      const { auction } = await response.json();
+      return auction
     } catch (error) {
       console.error('Error al crear subasta:', error);
       return null;

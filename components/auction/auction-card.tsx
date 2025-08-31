@@ -64,7 +64,7 @@ export function AuctionCard({ auction, onViewDetails }: AuctionCardProps) {
       <div className="relative">
         <div className="relative h-48 overflow-hidden bg-gray-100">
           <Image
-        src={auction.car.images[0] || 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=800'}
+        src={auction.car.imagen || 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=800'}
         alt={`${auction.car.make} ${auction.car.model}`}
         fill
         className={cn(

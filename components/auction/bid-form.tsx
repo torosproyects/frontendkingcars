@@ -55,11 +55,11 @@ export function BidForm({ auction, onBidSuccess }: BidFormProps) {
     setLocalError('');
 
     try {
-      if(user)
-      await placeBid(auction.id, amount, user.id, user.name);
-
-      setBidAmount('');
-      onBidSuccess?.();
+      if(user){
+       await placeBid(auction.id, amount, user.id, user.name);
+       setBidAmount('');
+       onBidSuccess?.();
+    }
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Error al procesar la puja');
     }

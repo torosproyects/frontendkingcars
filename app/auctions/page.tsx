@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,7 +17,7 @@ import {
   Gavel
 } from 'lucide-react';
 import { AuctionCard } from '@/components/auction/auction-card';
-import { useAuctionStore, useAuctionWebSocket } from '@/lib/store/auctions-store';
+import { useAuctionStore} from '@/lib/store/auctions-store';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { Auction } from '@/lib/types/auction';
 import { useRouter } from 'next/navigation';
@@ -30,19 +30,18 @@ export default function AuctionsPage() {
     watchedAuctions, 
     fetchAuctions, 
     isLoading, 
-    error,
-    connectionStatus
-  } = useAuctionStore();
+    error
+    } = useAuctionStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('all');
   
-  // Conectar WebSocket
-  useAuctionWebSocket(user?.id);
-
+  
+  
   useEffect(() => {
     // Cargar datos iniciales
+    if(user)
     fetchAuctions();
-  }, [fetchAuctions]);
+  }, [fetchAuctions, user]);
 
   const filterAuctions = (auctions: Auction[], status?: string) => {
     let filtered = auctions;
@@ -120,12 +119,12 @@ export default function AuctionsPage() {
         )}
 
         {/* Connection Status */}
-        {connectionStatus !== 'connected' && (
+        {!user && (
           <Card className="border-yellow-200 bg-yellow-50/80 backdrop-blur-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 text-yellow-800 text-sm">
                 <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                {connectionStatus === 'connecting' ? '🔄 Conectando en tiempo real...' : '📡 Modo offline - Actualizaciones limitadas'}
+                { 'usuario no loqueado - para ver subastas debes estar logueado'}
               </div>
             </CardContent>
           </Card>
