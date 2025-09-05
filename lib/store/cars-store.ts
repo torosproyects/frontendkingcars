@@ -19,18 +19,19 @@ interface FilterState {
 interface CarsStore {
   allCars: Carro[];
   filteredCars: Carro[];
-  visibleCars: Carro[];
   currentPage: number;
   itemsPerPage: number;
   loading: boolean;
   error: string | null;
   filters: FilterState;
+  lastFetch: number | null;
   
   // Acciones
-  fetchCars: () => Promise<void>;
+  fetchCars: (force?: boolean) => Promise<void>;
   applyFilters: (newFilters: Partial<FilterState>) => void;
   resetFilters: () => void;
   setCurrentPage: (page: number) => void;
+  getVisibleCars: () => Carro[];
   getPaginatedCars: () => Carro[];
   getTotalPages: () => number;
   getFeaturedCars: () => Carro[];
@@ -38,20 +39,27 @@ interface CarsStore {
   getCarById: (id: string) => Carro | undefined;
 }
 
+// Tiempo de cache en milisegundos (5 minutos)
+const CACHE_TIME = 5 * 60 * 1000;
+
 export const useCarsStore = create<CarsStore>((set, get) => ({
   allCars: [],
   filteredCars: [],
-  visibleCars: [],
   currentPage: 1,
   itemsPerPage: 5,
   loading: false,
   error: null,
   filters: {},
+  lastFetch: null,
 
-  // Cargar todos los carros
-  fetchCars: async () => {
-    const { allCars } = get();
-    if (allCars.length > 0) return;
+  // Cargar todos los carros con cache
+  fetchCars: async (force = false) => {
+    const { allCars, lastFetch } = get();
+    
+    
+    if (!force && allCars.length > 0 && lastFetch && Date.now() - lastFetch < CACHE_TIME) {
+      return;
+    }
 
     set({ loading: true, error: null });
     
@@ -62,8 +70,9 @@ export const useCarsStore = create<CarsStore>((set, get) => ({
       set({ 
         allCars: transformedCars,
         filteredCars: transformedCars,
-        visibleCars: transformedCars.slice(0, 5),
-        loading: false
+        currentPage: 1 ,
+        loading: false,
+        lastFetch: Date.now()
       });
       
     } catch (error) {
@@ -74,74 +83,84 @@ export const useCarsStore = create<CarsStore>((set, get) => ({
       });
     }
   },
+  getVisibleCars: () => {
+    const { filteredCars, currentPage, itemsPerPage } = get();
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredCars.slice(startIndex, startIndex + itemsPerPage);
+  },
+
   getFeaturedCars: () => {
-  const { allCars } = get();
-  return allCars
-    
-},
+    const { allCars } = get();
+    //aqui hay q llamar a la api y traer favoritos
+    return allCars.filter(car => car).slice(0, 6);
+  },
+
   getPaginatedCars: () => {
     const { filteredCars, currentPage, itemsPerPage } = get();
-    return filteredCars.slice(
-      (currentPage - 1) * itemsPerPage,
-      currentPage * itemsPerPage
-    );
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredCars.slice(startIndex, startIndex + itemsPerPage);
   },
 
   getTotalPages: () => {
     const { filteredCars, itemsPerPage } = get();
     return Math.ceil(filteredCars.length / itemsPerPage);
   },
+
   getCarById: (id: string) => { 
     const { allCars } = get();
-      return allCars.find(car => car.id === id); 
+    return allCars.find(car => car.id === id); 
   },
 
-  // Aplicar filtros
- applyFilters: (newFilters) => {
-  const { allCars, itemsPerPage } = get();
+  // Aplicar filtros optimizado
+  applyFilters: (newFilters) => {
+    const { allCars, filters: currentFilters } = get();
     
-  const updatedFilters = { ...get().filters, ...newFilters };
-  const filtered = allCars.filter(car => {
-    const matchesSearch = !updatedFilters.searchTerm || 
-      `${car.marca} ${car.modelo} ${car.categoria}`.toLowerCase()
-        .includes(updatedFilters.searchTerm.toLowerCase());
+    const updatedFilters = { ...currentFilters, ...newFilters };
+    
+    const filtered = allCars.filter(car => {
+      if (updatedFilters.searchTerm) {
+        const searchTerm = updatedFilters.searchTerm.toLowerCase();
+        const searchable = `${car.marca} ${car.modelo} ${car.categoria}`.toLowerCase();
+        if (!searchable.includes(searchTerm)) return false;
+      }
 
-    const matchesMake = !updatedFilters.make || 
-      updatedFilters.make === "Todas las Marcas" ||
-      car.marca.toLowerCase().includes(updatedFilters.make.toLowerCase());
+      if (updatedFilters.make && 
+          updatedFilters.make !== "Todas las Marcas" &&
+          car.marca.toLowerCase() !== updatedFilters.make.toLowerCase()) {
+        return false;
+      }
 
-    const matchesModel = !updatedFilters.model || 
-      car.modelo.toLowerCase().includes(updatedFilters.model.toLowerCase());
+      if (updatedFilters.model && 
+          !car.modelo.toLowerCase().includes(updatedFilters.model.toLowerCase())) {
+        return false;
+      }
 
-    const matchesYear = (!updatedFilters.minYear || car.year >= updatedFilters.minYear) &&
-      (!updatedFilters.maxYear || car.year <= updatedFilters.maxYear);
+      if (updatedFilters.minYear && car.year < updatedFilters.minYear) return false;
+      if (updatedFilters.maxYear && car.year > updatedFilters.maxYear) return false;
+      if (updatedFilters.minPrice && car.precio < updatedFilters.minPrice) return false;
+      if (updatedFilters.maxPrice && car.precio > updatedFilters.maxPrice) return false;
 
-    const matchesPrice = (!updatedFilters.minPrice || car.precio >= updatedFilters.minPrice) &&
-      (!updatedFilters.maxPrice || car.precio <= updatedFilters.maxPrice);
+      if (updatedFilters.categoria && 
+          updatedFilters.categoria !== "Todos las categorias" &&
+          car.categoria !== updatedFilters.categoria) {
+        return false;
+      }
 
-    const matchesBodyType = !updatedFilters.categoria|| 
-      updatedFilters.categoria === "Todos las categorias" ||
-      car.categoria === updatedFilters.categoria;
+      if (updatedFilters.color && 
+          updatedFilters.color !== "Todos los Colores" &&
+          car.colorExterior?.toLowerCase() !== updatedFilters.color.toLowerCase()) {
+        return false;
+      }
 
-    const matchesFuelType = !updatedFilters.color|| 
-      updatedFilters.color === "Todos los Combustibles" ||
-      car.colorExterior === updatedFilters.color;
+      return true;
+    });
 
-    const matchesColor = !updatedFilters.color || 
-      updatedFilters.color === "Todos los Colores" ||
-      car.colorExterior?.toLowerCase() === updatedFilters.color.toLowerCase();
-
-    return matchesSearch && matchesMake && matchesModel && 
-           matchesYear && matchesPrice && matchesBodyType && 
-           matchesFuelType && matchesColor;
-  });
-  set({
-    filters: updatedFilters,
-    filteredCars: filtered,
-    visibleCars: filtered.slice(0, itemsPerPage),
-    currentPage: 1
-  });
-},
+    set({
+      filters: updatedFilters,
+      filteredCars: filtered,
+      currentPage: 1
+    });
+  },
 
   // Resetear filtros
   resetFilters: () => {
@@ -149,7 +168,6 @@ export const useCarsStore = create<CarsStore>((set, get) => ({
     set({
       filters: {},
       filteredCars: allCars,
-      visibleCars: allCars.slice(0, itemsPerPage),
       currentPage: 1
     });
   },
@@ -162,9 +180,15 @@ export const useCarsStore = create<CarsStore>((set, get) => ({
       page * state.itemsPerPage
     )
   })),
-   addCar: (newCar: Carro) => set((state) => ({
-    allCars: [...state.allCars, newCar],
-    filteredCars: [...state.filteredCars, newCar],
-    visibleCars: [...state.visibleCars, newCar].slice(0, state.itemsPerPage)
-  }))
+  
+  addCar: (newCar: Carro) => set((state) => {
+  const exists = state.allCars.some(car => car.id === newCar.id);
+  if (exists) return state; // No agregar duplicados
+
+  return {
+    allCars: [newCar, ...state.allCars],
+    filteredCars: [newCar, ...state.filteredCars],
+    currentPage: 1
+  };
+})
 }));

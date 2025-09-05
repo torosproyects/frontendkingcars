@@ -178,7 +178,7 @@ export default function Header() {
                 {/* Enlaces específicos por rol - Solo para usuarios verificados */}
                 {userStatus === 'verificado' && isAdmin() && (
                   <Link
-                    href="/admin/dashboard"
+                    href="/admin"
                     onClick={handleSheetLinkClick} // Cerrar al hacer clic
                     className={cn(
                       "text-lg font-medium transition-colors hover:text-primary",
@@ -420,7 +420,7 @@ export default function Header() {
               {/* Enlaces específicos por rol en el menú principal - Solo para verificados */}
               {userStatus === 'verificado' && isAdmin() && (
                 <NavigationMenuItem>
-                  <Link href="/admin/dashboard" legacyBehavior passHref>
+                  <Link href="/admin" legacyBehavior passHref>
                     <NavigationMenuLink className={navigationMenuTriggerStyle()}>
                       Administración
                     </NavigationMenuLink>

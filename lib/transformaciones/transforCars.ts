@@ -21,5 +21,7 @@ export function transformBackendToFrontend(backendCars: BackendCar[]): Carro[] {
     serial_motor: backendCar.serial_motor,
     imagen: backendCar.imagen,
     serial_carroceria: backendCar.serial_carroceria,
+    estado:backendCar.estado
+
   }));
 }

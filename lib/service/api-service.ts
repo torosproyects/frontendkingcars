@@ -33,6 +33,7 @@ async function fetchWithTimeout(
 export class ApiService {
   static async checkApiHealth(): Promise<boolean> {
     try {
+      console.log(API_BASE_URL + "   aquiiiiii 37 apiservice")
       const response = await fetchWithTimeout(`${API_BASE_URL}/health`, {}, 3000);
       return response.ok;
     } catch {

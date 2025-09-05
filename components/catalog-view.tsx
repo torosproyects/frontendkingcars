@@ -23,11 +23,9 @@ export function CatalogView() {
     error,
     filteredCars,
     currentPage,
-    visibleCars,
     getPaginatedCars,
     getTotalPages,
     setCurrentPage,
-    itemsPerPage,
    } = useCarsStore();
    
 
@@ -37,7 +35,7 @@ export function CatalogView() {
   // Obtener carros paginados
   const paginatedCars = getPaginatedCars();
   const totalPages = getTotalPages();
-
+  
   // Filtrar por tab activo
   const displayCars = React.useMemo(() => {
     if (activeTab === "new") {

@@ -303,7 +303,8 @@ useEffect(() => {
       imagen: backendCarData.imagen,
       serial_carroceria: backendCarData.serial_carroceria,
     }; 
-        addCar(newCar); 
+    console.log(newCar)
+     addCar(newCar); 
      toast({
           title: "¡Auto subido exitosamente!",
           description: "Tu vehículo ha sido publicado y está siendo revisado"

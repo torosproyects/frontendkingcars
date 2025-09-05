@@ -280,8 +280,8 @@ export function UserMenu() {
                   <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Administración
                   </DropdownMenuLabel>
-                  <MenuItem href="/admin/dashboard" icon={BarChart3}>Panel de Control</MenuItem>
-                  <MenuItem href="/admin/users" icon={Users}>Gestión de Usuarios</MenuItem>
+                  <MenuItem href="/admin" icon={BarChart3}>Panel de Control</MenuItem>
+                  <MenuItem href="/admin/vehiculos" icon={Users}>Gestión de Usuarios</MenuItem>
                 </>
               )}
             </>

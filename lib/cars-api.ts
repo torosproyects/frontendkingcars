@@ -1,5 +1,6 @@
 import { BackendCar } from "@/types/carro";
 
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 // Función para hacer petición al backend con reintentos
 function delay(ms: number): Promise<void> {
   return new Promise<void>(resolve => {
@@ -10,19 +11,18 @@ export async function getAllCars(): Promise<BackendCar[]> {
  
 const maxRetries = 2;
   let lastError: Error | null = null;
- console.log("se llama.............................................. ");
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`Intento ${attempt} de obtener todos los carros del backend...`);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/cars`);
+     
+      const response = await fetch(`${API_URL}/api/cars`);
       
       if (!response.ok) {
         throw new Error(`Error del servidor: ${response.status}`);
       }
 
       const backendCars: BackendCar[] = await response.json();
-          
-      console.log('✅ Carros obtenidos y transformados exitosamente');
+        
       return backendCars;
     } catch (error) {
       lastError = error as Error;

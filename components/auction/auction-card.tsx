@@ -18,7 +18,6 @@ interface AuctionCardProps {
 export function AuctionCard({ auction, onViewDetails }: AuctionCardProps) {
   const { watchAuction, unwatchAuction } = useAuctionStore();
   const [imageLoaded, setImageLoaded] = useState(false);
-
   const getStatusColor = (status: Auction['status']) => {
     switch (status) {
       case 'active':

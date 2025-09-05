@@ -12,6 +12,7 @@ export interface BackendCar {
   marca: string;
   modelo: string;
   imagenes: Array<{ id: string; url: string }>;
+  estado:string;
 }
 
 export interface Carro {
@@ -20,7 +21,7 @@ export interface Carro {
   modelo: string;
   year: number;
   precio: number;
-  images: CarImage[];
+  imagenes: CarImage[];
   placa: string;
   kilometraje: number;
   categoria?: string;
@@ -29,6 +30,7 @@ export interface Carro {
   serial_motor: string;
   imagen: string;
   serial_carroceria: string;
+  estado:string;
 }
 
 export interface CarImage {

@@ -1,10 +1,9 @@
 // app/catalog/page.tsx
-'use client'; // Importante si usas App Router
+'use client'; 
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCarsStore } from '@/lib/store/cars-store';
 import { CarCard } from '@/components/catalog/CarCard';
-
 import { PaginationControls } from '@/components/catalog/PaginationControls';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,13 +11,16 @@ import { Filter } from 'lucide-react';
 import { FilterDrawer } from '@/components/catalog/FilterDrawer'; // O FilterModal
 
 export default function CatalogPage() {
-  const { loading, error, visibleCars, currentPage, getTotalPages, setCurrentPage, applyFilters, filters, resetFilters } = useCarsStore();
+  const { loading, error, getVisibleCars, currentPage, getTotalPages, setCurrentPage, applyFilters, filters, resetFilters, fetchCars } = useCarsStore();
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const totalPages = getTotalPages();
-
+  const visibleCars = getVisibleCars();
    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     applyFilters({ searchTerm: e.target.value });
   };
+   useEffect(() => {
+    fetchCars(true);
+  }, [fetchCars]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
