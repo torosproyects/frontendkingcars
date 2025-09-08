@@ -161,9 +161,10 @@ export default function AuctionDetailPage() {
               <CardContent className="p-0">
                 <div className="relative w-full h-96">
   <Image
-    src={car.imagen}
+    src={car.imagenes[selectedImageIndex]?.url}
     alt={`${car.make} ${car.model}`}
     fill
+    priority={true}
     className="object-cover"
     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 100vw"
   />
@@ -182,25 +183,26 @@ export default function AuctionDetailPage() {
                   </Badge>
                 </div>
 
-                {car.images.length > 1 && (
+                {car.imagenes.length > 1 && (
                   <div className="p-4">
-                    <div className="flex gap-2 overflow-x-auto">
-                      {car.images.map((image, index) => (
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                      {car.imagenes.map((image, index) => (
                         <button
-                          key={index}
+                          key={image.id}
                           onClick={() => setSelectedImageIndex(index)}
                           className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
                             selectedImageIndex === index
-                              ? 'border-blue-500'
+                              ? 'border-blue-500 ring-2 ring-blue-300'
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
                           <Image
-                            src=""
+                            src={image.url}
                             alt={`Vista ${index + 1}`}
-                            fill
-                            className="object-cover"
-                            sizes="100vw"
+                           width={80}
+                height={80}
+                className="object-cover w-full h-full"
+                          
                           />
                         </button>
                       ))}

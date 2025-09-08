@@ -20,6 +20,7 @@ import {
   User, Settings, LogOut, ShieldAlert, Shield,
   Car, BarChart3, Users, Heart, FileText, Gavel,
   Plus, Edit, Key, CheckCircle, Clock,
+  Wrench,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -271,6 +272,7 @@ export function UserMenu() {
                   </DropdownMenuLabel>
                   <MenuItem href="/dealer/inventory" icon={Car}>Mi Inventario</MenuItem>
                   <MenuItem href="/dealer/leads" icon={Users}>Clientes Potenciales</MenuItem>
+                  <MenuItem href="/taller" icon={Wrench}>Taller</MenuItem>
                 </>
               )}
 

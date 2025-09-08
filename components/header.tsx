@@ -200,6 +200,18 @@ export default function Header() {
                     Mi Inventario
                   </Link>
                 )}
+                {userStatus === 'verificado' && isDealer() && (
+  <Link
+    href="/taller"
+    onClick={handleSheetLinkClick}
+    className={cn(
+      "text-lg font-medium transition-colors hover:text-primary",
+      pathname.startsWith("/taller") ? "text-primary" : "text-muted-foreground"
+    )}
+  >
+    Taller
+  </Link>
+)}
                 <Link
                   href="/about"
                   onClick={handleSheetLinkClick} // Cerrar al hacer clic
@@ -409,6 +421,80 @@ export default function Header() {
                             <div className="text-sm font-medium leading-none">Subastas Activas</div>
                             <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                               Participa en subastas que están en curso
+                            </p>
+                          </NavigationMenuLink>
+                        </Link>
+                      </li>
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              )}
+              {userStatus === 'verificado' && isDealer() && (
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger>Taller</NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                      <li className="row-span-3">
+                        <NavigationMenuLink asChild>
+                          <a
+                            className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
+                            href="/taller"
+                          >
+                            <div className="mb-2 mt-4 text-lg font-medium">
+                              Dashboard del Taller
+                            </div>
+                            <p className="text-sm leading-tight text-muted-foreground">
+                              Gestiona evaluaciones, horarios y citas de tu taller
+                            </p>
+                          </a>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <Link href="/taller/evaluacion/entrada" legacyBehavior passHref>
+                          <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                            <div className="text-sm font-medium leading-none">Nueva Evaluación</div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Registra el estado inicial de un vehículo
+                            </p>
+                          </NavigationMenuLink>
+                        </Link>
+                      </li>
+                      <li>
+                        <Link href="/taller/evaluacion/pruebas" legacyBehavior passHref>
+                          <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                            <div className="text-sm font-medium leading-none">Pruebas Técnicas</div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Realiza pruebas técnicas a vehículos
+                            </p>
+                          </NavigationMenuLink>
+                        </Link>
+                      </li>
+                      <li>
+                        <Link href="/taller/evaluacion/final" legacyBehavior passHref>
+                          <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                            <div className="text-sm font-medium leading-none">Evaluación Final</div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Completa la evaluación con recomendaciones
+                            </p>
+                          </NavigationMenuLink>
+                        </Link>
+                      </li>
+                      <li>
+                        <Link href="/taller/horarios" legacyBehavior passHref>
+                          <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                            <div className="text-sm font-medium leading-none">Horarios</div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Configura horarios de disponibilidad
+                            </p>
+                          </NavigationMenuLink>
+                        </Link>
+                      </li>
+                      <li>
+                        <Link href="/taller/citas" legacyBehavior passHref>
+                          <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                            <div className="text-sm font-medium leading-none">Citas</div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Gestiona citas programadas
                             </p>
                           </NavigationMenuLink>
                         </Link>

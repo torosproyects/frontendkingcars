@@ -6,7 +6,7 @@ export interface Car {
   mileage: number;
   color: string;
   imagen:string;
-  imagenes?: CarImageA[];
+  imagenes: CarImageA[];
   description: string;
   condition: 'nuevo' | 'usado' | 'reparado' ;
   estimatedValue: number;
