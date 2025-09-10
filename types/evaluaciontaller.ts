@@ -264,12 +264,6 @@ export interface HorariosApiResponse extends ApiResponse<HorarioTaller[]> {
   taller_id: string;
 }
 
-  observaciones: string;
-
-}
-
-
-
 export interface PruebaLuces {
 
   funcionamiento: "excelente" | "bueno" | "regular" | "malo";

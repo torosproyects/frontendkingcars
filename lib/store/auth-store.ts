@@ -9,6 +9,7 @@ interface AuthState {
   user: User | null;
   seLogueo: boolean;
   isLoading: boolean;
+  isInitializing: boolean; // Nuevo estado para controlar la inicialización
   error: string | null;
   
   // Acciones
@@ -39,6 +40,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   seLogueo: false,
   isLoading: false,
+  isInitializing: true, // Inicializar como true
   error: null,
 
   // Iniciar sesión
@@ -301,18 +303,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // Inicializar autenticación desde cookies
   initializeAuth: async () => {
+    set({ isInitializing: true });
     try {
     // Hacer petición para verificar sesión actual
     const user = await authAPI.getProfile();
     set({
       user,
       seLogueo: true,
+      isInitializing: false,
     });
   } catch (error) {
     // No hay sesión válida
     set({
       user: null,
       seLogueo: false,
+      isInitializing: false,
     });
   }
   },

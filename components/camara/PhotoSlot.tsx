@@ -47,13 +47,25 @@ const PhotoSlot: React.FC<PhotoSlotProps> = ({ template, capturedPhoto, onCaptur
                            className="w-full h-full object-cover"
                            width={500}  // Obligatorio: define el ancho máximo esperado
                            height={500} // Obligatorio: define el alto máximo esperado
-                           priority={true} // Opcional: si es una imagen crítica (ej. LCP)
+                           priority={!capturedPhoto} // Solo priorizar imágenes de referencia
+                           loading={capturedPhoto ? "lazy" : "eager"}
+                           onError={(e) => {
+                             console.warn(`Error loading image for ${template.label}:`, e);
+                           }}
+                           onLoad={() => {
+                             // Imagen cargada exitosamente
+                           }}
                           />
                           {!capturedPhoto && (
                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                               <span className="text-white text-xs text-center px-2">
                                 Referencia
                               </span>
+                            </div>
+                          )}
+                          {capturedPhoto && (
+                            <div className="absolute top-1 right-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                              ✓
                             </div>
                           )}
                         </div>

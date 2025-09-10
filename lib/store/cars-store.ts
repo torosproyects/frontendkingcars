@@ -56,16 +56,22 @@ export const useCarsStore = create<CarsStore>((set, get) => ({
   fetchCars: async (force = false) => {
     const { allCars, lastFetch } = get();
     
+    console.log('fetchCars llamado:', { force, allCarsLength: allCars.length, lastFetch });
     
     if (!force && allCars.length > 0 && lastFetch && Date.now() - lastFetch < CACHE_TIME) {
+      console.log('Usando cache, no cargando carros');
       return;
     }
 
+    console.log('Iniciando carga de carros...');
     set({ loading: true, error: null });
     
     try {
       const backendCars = await getAllCars();
+      console.log('Carros obtenidos del backend:', backendCars.length);
+      
       const transformedCars = transformBackendToFrontend(backendCars);
+      console.log('Carros transformados:', transformedCars.length);
       
       set({ 
         allCars: transformedCars,
@@ -74,6 +80,8 @@ export const useCarsStore = create<CarsStore>((set, get) => ({
         loading: false,
         lastFetch: Date.now()
       });
+      
+      console.log('Carros guardados en el store');
       
     } catch (error) {
       console.error('Error al cargar carros:', error);
@@ -91,8 +99,8 @@ export const useCarsStore = create<CarsStore>((set, get) => ({
 
   getFeaturedCars: () => {
     const { allCars } = get();
-    //aqui hay q llamar a la api y traer favoritos
-    return allCars.filter(car => car).slice(0, 6);
+    // Retornar los primeros 6 carros como destacados
+    return allCars.slice(0, 6);
   },
 
   getPaginatedCars: () => {

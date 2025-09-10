@@ -216,20 +216,43 @@ useEffect(() => {
         ...vehicleData,
         metadata: {
           timestamp: new Date().toISOString(),
-          photosCount: capturedPhotos.length
+          photosCount: capturedPhotos.length,
+          browserInfo: {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language
+          }
         }
       })
     );
   }
 
-  // 3. Conversión y agregado de fotos (implementación completa)
-  capturedPhotos.forEach((photo) => {
+  // 3. Conversión y agregado de fotos (implementación mejorada)
+  capturedPhotos.forEach((photo, index) => {
     try {
+      // Validar que la imagen tenga el formato correcto
+      if (!photo.imageUrl.startsWith('data:image/')) {
+        console.error(`Foto ${photo.templateId} no tiene formato de imagen válido`);
+        return;
+      }
+
       // Extraer la parte Base64 del Data URL
       const base64Data = photo.imageUrl.split(',')[1];
       
-      // Convertir Base64 a Blob
-      const byteCharacters = atob(base64Data);
+      if (!base64Data) {
+        console.error(`Foto ${photo.templateId} no contiene datos Base64 válidos`);
+        return;
+      }
+
+      // Convertir Base64 a Blob con manejo de errores mejorado
+      let byteCharacters: string;
+      try {
+        byteCharacters = atob(base64Data);
+      } catch (error) {
+        console.error(`Error decodificando Base64 para foto ${photo.templateId}:`, error);
+        return;
+      }
+
       const byteArrays = new Uint8Array(byteCharacters.length);
       
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -238,11 +261,16 @@ useEffect(() => {
       
       const blob = new Blob([byteArrays], { type: 'image/jpeg' });
       
+      // Verificar tamaño del blob (máximo 10MB)
+      if (blob.size > 10 * 1024 * 1024) {
+        console.warn(`Foto ${photo.templateId} es muy grande (${blob.size} bytes), se comprimirá`);
+      }
+      
       // Obtener información de la plantilla para el nombre del archivo
       const template = PHOTO_TEMPLATES.find(t => t.id === photo.templateId);
       const photoName = template 
-        ? `photo_${template.label.toLowerCase().replace(/\s+/g, '_')}.jpg`
-        : `photo_${photo.templateId}.jpg`;
+        ? `photo_${template.label.toLowerCase().replace(/\s+/g, '_')}_${index + 1}.jpg`
+        : `photo_${photo.templateId}_${index + 1}.jpg`;
       
       // Agregar al FormData
       uploadData.append(
@@ -253,7 +281,7 @@ useEffect(() => {
       
     } catch (error) {
       console.error(`Error procesando foto ${photo.templateId}:`, error);
-      // Puedes agregar manejo de errores específico aquí
+      // Continuar con las demás fotos aunque una falle
     }
   });
 
@@ -293,7 +321,7 @@ useEffect(() => {
       modelo: backendCarData.modelo,
       year: backendCarData.year, 
       precio: parseFloat(backendCarData.precio),
-      images: backendCarData.imagenes, 
+      imagenes: backendCarData.imagenes, 
       placa: backendCarData.placa, 
       kilometraje: backendCarData.kilometraje,
       categoria: backendCarData.categoria,
@@ -302,6 +330,7 @@ useEffect(() => {
       serial_motor: backendCarData.serial_motor,
       imagen: backendCarData.imagen,
       serial_carroceria: backendCarData.serial_carroceria,
+      estado:"8"
     }; 
     console.log(newCar)
      addCar(newCar); 

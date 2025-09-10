@@ -24,7 +24,7 @@ import { useRouter } from 'next/navigation';
 
 export default function AuctionsPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, isInitializing } = useAuthStore();
   const { 
     auctions, 
     watchedAuctions, 
@@ -38,10 +38,14 @@ export default function AuctionsPage() {
   
   
   useEffect(() => {
-    // Cargar datos iniciales
-    if(user)
-    fetchAuctions();
-  }, [fetchAuctions, user]);
+    // Cargar datos iniciales solo cuando la autenticación esté lista
+    console.log('AuctionsPage useEffect:', { isInitializing, user: !!user, userId: user?.id });
+    
+    if (!isInitializing && user) {
+      console.log('Usuario logueado, cargando subastas');
+      fetchAuctions();
+    }
+  }, [fetchAuctions, user, isInitializing]);
 
   const filterAuctions = (auctions: Auction[], status?: string) => {
     let filtered = auctions;
@@ -80,15 +84,19 @@ export default function AuctionsPage() {
 
   const tabCounts = getTabCounts();
 
-  // Loading state
-  if (isLoading && auctions.length === 0) {
+  // Loading state - mostrar loading si está inicializando o cargando subastas
+  if (isInitializing || (isLoading && auctions.length === 0)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
             <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Cargando subastas...</h3>
-            <p className="text-gray-600">Obteniendo las mejores ofertas para ti</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {isInitializing ? 'Inicializando...' : 'Cargando subastas...'}
+            </h3>
+            <p className="text-gray-600">
+              {isInitializing ? 'Verificando autenticación' : 'Obteniendo las mejores ofertas para ti'}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -118,8 +126,8 @@ export default function AuctionsPage() {
           </Card>
         )}
 
-        {/* Connection Status */}
-        {!user && (
+        {/* Connection Status - Solo mostrar si no está inicializando y no hay usuario */}
+        {!isInitializing && !user && (
           <Card className="border-yellow-200 bg-yellow-50/80 backdrop-blur-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 text-yellow-800 text-sm">

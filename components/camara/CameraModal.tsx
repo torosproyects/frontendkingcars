@@ -6,6 +6,33 @@ import {
   Camera, 
   AlertCircleIcon
 } from 'lucide-react';
+import { useBrowserCapabilities } from '@/hooks/use-browser-capabilities';
+
+// Extender la interfaz Navigator para incluir getUserMedia legacy
+declare global {
+  interface Navigator {
+    getUserMedia?: (
+      constraints: MediaStreamConstraints,
+      successCallback: (stream: MediaStream) => void,
+      errorCallback: (error: any) => void
+    ) => void;
+    webkitGetUserMedia?: (
+      constraints: MediaStreamConstraints,
+      successCallback: (stream: MediaStream) => void,
+      errorCallback: (error: any) => void
+    ) => void;
+    mozGetUserMedia?: (
+      constraints: MediaStreamConstraints,
+      successCallback: (stream: MediaStream) => void,
+      errorCallback: (error: any) => void
+    ) => void;
+    msGetUserMedia?: (
+      constraints: MediaStreamConstraints,
+      successCallback: (stream: MediaStream) => void,
+      errorCallback: (error: any) => void
+    ) => void;
+  }
+}
 
 
 interface CameraModalProps {
@@ -21,44 +48,141 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onCapture, t
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
+  
+  // Usar el hook de capacidades del navegador
+  const { capabilities, isLoading: capabilitiesLoading, getCompatibilityMessage } = useBrowserCapabilities();
+
+  const handleCameraError = useCallback((err: Error | any, capabilities: any) => {
+    // Manejar tanto Error como errores de MediaStream
+    const errorName = err.name || (err as any).constraintName;
+    const errorMessage = err.message || (err as any).message || 'Error desconocido';
+    
+    switch (errorName) {
+      case "NotAllowedError":
+      case "PermissionDeniedError":
+        setError("Permiso de cámara denegado. Por favor, habilita el acceso a la cámara en la configuración de tu navegador y recarga la página.");
+        break;
+      case "NotFoundError":
+      case "DevicesNotFoundError":
+        setError("No se encontró ninguna cámara. Asegúrate de que una cámara esté conectada y habilitada.");
+        break;
+      case "NotReadableError":
+      case "TrackStartError":
+        setError("La cámara está siendo usada por otra aplicación. Cierra otras aplicaciones que puedan estar usando la cámara.");
+        break;
+      case "OverconstrainedError":
+      case "ConstraintNotSatisfiedError":
+        setError("La configuración de la cámara no es compatible. Intenta con una resolución diferente.");
+        break;
+      case "NotSupportedError":
+        setError("Tu navegador no soporta esta funcionalidad. Actualiza tu navegador o usa Chrome, Firefox, Safari o Edge.");
+        break;
+      case "SecurityError":
+        if (!capabilities.isSecureContext) {
+          setError("Se requiere HTTPS para acceder a la cámara. Por favor, usa una conexión segura.");
+        } else {
+          setError("Error de seguridad al acceder a la cámara. Verifica los permisos.");
+        }
+        break;
+      case "AbortError":
+        setError("La operación de cámara fue cancelada. Intenta nuevamente.");
+        break;
+      case "TypeError":
+        setError("Error de tipo en la configuración de la cámara. Verifica la compatibilidad del navegador.");
+        break;
+      default:
+        setError(`Error al acceder a la cámara: ${errorMessage}`);
+    }
+  }, []);
 
   const startCamera = useCallback(async () => {
+    if (!capabilities) return;
+    
     setError(null);
     setIsCameraReady(false);
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    
+    // Verificar contexto seguro (HTTPS o localhost)
+    if (!capabilities.isSecureContext && !capabilities.isLocalhost) {
+      setError("Se requiere HTTPS para acceder a la cámara. Por favor, usa una conexión segura.");
+      return;
+    }
+
+    // Intentar con la API moderna primero
+    if (capabilities.hasMediaDevices) {
       try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        // Configuración adaptativa según el dispositivo
+        const constraints = {
           video: { 
-            facingMode: "environment", // Usa la cámara trasera
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          } 
-        });
+            facingMode: { ideal: "environment" }, // Preferir cámara trasera
+            width: { 
+              min: 320, 
+              ideal: capabilities.isMobile ? 1280 : 1920, 
+              max: 4096 
+            },
+            height: { 
+              min: 240, 
+              ideal: capabilities.isMobile ? 720 : 1080, 
+              max: 2160 
+            },
+            frameRate: { ideal: 30, max: 60 }
+          }
+        };
+
+        const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
         setStream(mediaStream);
+        
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
           videoRef.current.onloadedmetadata = () => {
              setIsCameraReady(true);
-          }
+          };
+          
+          // Manejar errores de carga del video
+          videoRef.current.onerror = () => {
+            setError("Error al cargar el stream de video. Intenta nuevamente.");
+          };
         }
       } catch (err) {
         console.error("Error accessing camera:", err);
-        if (err instanceof Error) {
-            if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-                 setError("Permiso de cámara denegado. Por favor, habilita el acceso a la cámara en la configuración de tu navegador.");
-            } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError"){
-                 setError("No se encontró ninguna cámara. Asegúrate de que una cámara esté conectada y habilitada.");
-            } else {
-                 setError(`Error al acceder a la cámara: ${err.message}`);
+        handleCameraError(err, capabilities);
+      }
+    } 
+    // Fallback para navegadores más antiguos
+    else if (capabilities.hasGetUserMedia) {
+      try {
+        const getUserMedia = navigator.getUserMedia || 
+                           navigator.webkitGetUserMedia || 
+                           navigator.mozGetUserMedia || 
+                           navigator.msGetUserMedia;
+        
+        if (getUserMedia) {
+          // Usar bind para asegurar el contexto correcto
+          const boundGetUserMedia = getUserMedia.bind(navigator);
+          boundGetUserMedia(
+            { video: true }, 
+            (mediaStream: MediaStream) => {
+              setStream(mediaStream);
+              if (videoRef.current) {
+                videoRef.current.srcObject = mediaStream;
+                videoRef.current.onloadedmetadata = () => {
+                  setIsCameraReady(true);
+                };
+              }
+            },
+            (err: any) => {
+              handleCameraError(err, capabilities);
             }
+          );
         } else {
-            setError("Ocurrió un error desconocido al acceder a la cámara.");
+          setError("No se pudo acceder a la API de cámara. Tu navegador podría no soportar esta funcionalidad.");
         }
+      } catch (err) {
+        handleCameraError(err as Error, capabilities);
       }
     } else {
-      setError("La API de MediaDevices no es compatible con este navegador.");
+      setError("Tu navegador no soporta acceso a la cámara. Por favor, actualiza a una versión más reciente o usa Chrome, Firefox, Safari o Edge.");
     }
-  }, []);
+  }, [capabilities, handleCameraError]);
 
   const stopCamera = useCallback(() => {
     if (stream) {
@@ -85,30 +209,72 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onCapture, t
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // stopCamera is memoized
 
-  const handleCapture = () => {
-    if (videoRef.current && canvasRef.current && isCameraReady) {
+  const handleCapture = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current || !isCameraReady) {
+      setError("La cámara no está lista o no se pudo acceder al lienzo de captura.");
+      return;
+    }
+
       const video = videoRef.current;
       const canvas = canvasRef.current;
+    
+    // Verificar que el video tenga dimensiones válidas
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      setError("El video no está completamente cargado. Espera un momento e intenta nuevamente.");
+      return;
+    }
+
+    try {
       // Set canvas dimensions to video's actual dimensions to maintain aspect ratio
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       
       const context = canvas.getContext('2d');
-      if (context) {
-        // Flip horizontally for a mirror effect if using front camera
-        if(stream?.getVideoTracks()[0]?.getSettings().facingMode === 'user'){
+      if (!context) {
+        setError("No se pudo obtener el contexto del canvas. Tu navegador podría no soportar esta funcionalidad.");
+        return;
+      }
+
+      // Detectar si es cámara frontal para aplicar efecto espejo
+      const videoTrack = stream?.getVideoTracks()[0];
+      const settings = videoTrack?.getSettings();
+      const isFrontCamera = settings?.facingMode === 'user' || 
+                           settings?.facingMode === 'front' ||
+                           (settings?.facingMode === undefined && videoTrack?.getCapabilities().facingMode?.includes('user'));
+
+      // Aplicar transformaciones si es necesario
+      if (isFrontCamera) {
           context.translate(canvas.width, 0);
           context.scale(-1, 1);
         }
+
+      // Dibujar la imagen en el canvas
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.9); // Use JPEG for smaller size, adjust quality
-        onCapture(dataUrl);
-        onClose();
+      
+      // Convertir a data URL con calidad optimizada
+      const quality = 0.85; // Balance entre calidad y tamaño
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      
+      // Verificar que la imagen se generó correctamente
+      if (dataUrl === 'data:,') {
+        setError("Error al generar la imagen. Intenta nuevamente.");
+        return;
       }
-    } else {
-        setError("La cámara no está lista o no se pudo acceder al lienzo de captura.");
+
+      // Verificar tamaño de la imagen (máximo 10MB)
+      const sizeInBytes = (dataUrl.length * 3) / 4;
+      if (sizeInBytes > 10 * 1024 * 1024) {
+        setError("La imagen es demasiado grande. Intenta con una resolución menor.");
+        return;
+      }
+
+      onCapture(dataUrl);
+      onClose();
+    } catch (error) {
+      console.error("Error during capture:", error);
+      setError("Error al capturar la imagen. Intenta nuevamente.");
     }
-  };
+  }, [isCameraReady, stream, onCapture, onClose]);
 
   if (!isOpen) return null;
 
@@ -121,10 +287,48 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onCapture, t
         </div>
         <p className="text-sm text-gray-600 mb-4">{template?.description}</p>
 
+        {/* Mostrar información de compatibilidad */}
+        {capabilities && !capabilitiesLoading && (
+          (() => {
+            const compatibilityMessage = getCompatibilityMessage();
+            if (!compatibilityMessage) return null;
+            
+            const isError = compatibilityMessage.type === 'error';
+            const isWarning = compatibilityMessage.type === 'warning';
+            
+            return (
+              <div className={`mb-4 p-3 rounded-md flex items-start ${
+                isError 
+                  ? 'bg-red-100 border border-red-400 text-red-700' 
+                  : 'bg-yellow-100 border border-yellow-400 text-yellow-700'
+              }`}>
+                <AlertCircleIcon className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0"/>
+                <div className="flex-1">
+                  <span className="block font-medium">{compatibilityMessage.title}</span>
+                  <span className="block text-sm mt-1">{compatibilityMessage.message}</span>
+                  {compatibilityMessage.browsers.length > 0 && (
+                    <div className="mt-2 text-sm">
+                      <p className="font-medium">Navegadores compatibles:</p>
+                      <ul className="list-disc list-inside mt-1 space-y-1">
+                        {compatibilityMessage.browsers.map((browser, index) => (
+                          <li key={index}>{browser}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()
+        )}
+
+        {/* Mostrar errores de cámara */}
         {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md flex items-center">
-            <AlertCircleIcon className="w-5 h-5 mr-2"/>
-            <span>{error}</span>
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md flex items-start">
+            <AlertCircleIcon className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0"/>
+            <div className="flex-1">
+              <span className="block">{error}</span>
+            </div>
           </div>
         )}
 

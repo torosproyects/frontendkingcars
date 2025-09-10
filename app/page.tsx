@@ -1,8 +1,21 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { FeaturedCars } from '@/components/featured-cars';
 import { HeroBanner } from '@/components/hero-banner';
 import { SearchFilters } from '@/components/search-filters';
+import dynamic from 'next/dynamic';
+
+// Lazy load FeaturedCars para mejorar rendimiento inicial
+const FeaturedCars = dynamic(() => import('@/components/featured-cars').then(mod => ({ default: mod.FeaturedCars })), {
+  loading: () => (
+    <div className="flex items-center justify-center py-12">
+      <div className="text-center">
+        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Cargando vehículos destacados...</p>
+      </div>
+    </div>
+  ),
+  ssr: false
+});
 
 export default function Home() {
   return (

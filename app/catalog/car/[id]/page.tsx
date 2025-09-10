@@ -92,7 +92,7 @@ export default function CarDetailPage({ params }: { params: { id: string } }) {
       {/* Galería de Imágenes del Carro */}
       <div className="mb-10">
         <CarGallery
-          images={ car.images }
+          images={ car.imagenes }
           carName={`${car.marca} ${car.modelo}`}
           isNew={car.isNew}
           primaryImageUrl={car.imagen}

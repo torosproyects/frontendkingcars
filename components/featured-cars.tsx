@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -11,12 +11,13 @@ import { Fuel, Gauge, Calendar, ArrowRight, Loader2 } from "lucide-react";
 import { motion } from "@/lib/motion";
 import { useCarsStore } from "@/lib/store/cars-store";
 
-export function FeaturedCars() {
-  const { loading, error, getFeaturedCars } = useCarsStore();
+export const FeaturedCars = memo(function FeaturedCars() {
+  const { loading, error, allCars, fetchCars, getFeaturedCars } = useCarsStore();
   
   const featuredCars = getFeaturedCars();
 
-  if (loading) {
+  // Mostrar loading solo si está cargando Y no hay carros
+  if (loading && allCars.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
@@ -31,7 +32,13 @@ export function FeaturedCars() {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <p className="text-destructive">{error}</p>
+          <p className="text-destructive">Error: {error}</p>
+          <button 
+            onClick={() => fetchCars(true)}
+            className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+          >
+            Reintentar
+          </button>
         </div>
       </div>
     );
@@ -42,6 +49,12 @@ export function FeaturedCars() {
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <p className="text-muted-foreground">No hay vehículos destacados disponibles.</p>
+          <button 
+            onClick={() => fetchCars(true)}
+            className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+          >
+            Cargar vehículos
+          </button>
         </div>
       </div>
     );
@@ -64,6 +77,9 @@ export function FeaturedCars() {
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 25vw"
+                quality={80}
+                placeholder="blur"
+                blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
               />
               {car.isNew && (
                 <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground">
@@ -110,4 +126,4 @@ export function FeaturedCars() {
       ))}
     </div>
   );
-}
+});

@@ -11,15 +11,14 @@ const AuthContext = createContext<null>(null);
 
 export function AuthProvider({ children }: AuthProviderProps) {
  
- const { initializeAuth, isLoading } = useAuthStore();
+ const { initializeAuth, isInitializing } = useAuthStore();
 
   useEffect(() => {
-  
     initializeAuth();
  }, [initializeAuth]);
 
   // Mostrar loading mientras se inicializa la autenticación
-  if (isLoading) {
+  if (isInitializing) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

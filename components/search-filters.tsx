@@ -146,7 +146,7 @@ export function SearchFilters() {
       filters.minPrice || 0,
       filters.maxPrice || 200000
     ]);
-  }, [ ]);
+  }, [filters, form]);
   const handleFieldChange = (fieldName: keyof SearchValues, value: any) => {
     form.setValue(fieldName, value);
     
