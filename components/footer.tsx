@@ -10,15 +10,14 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
-  <Image 
-    src={logo} 
-    alt="CarsKing Logo" 
-    width={80}
-    height={80}
-    className="object-contain"
-  />
-  
-</div>
+              <Image 
+                src={logo} 
+                alt="CarsKing Logo" 
+                width={60}
+                height={60}
+                className="object-contain w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20"
+              />
+            </div>
             <p className="text-muted-foreground mb-4">
               Descubre tu vehículo perfecto con nuestra selección premium de autos.
             </p>
@@ -26,8 +25,9 @@ export default function Footer() {
               <a
                 href="https://facebook.com"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary"
+                aria-label="Síguenos en Facebook"
               >
                 <Facebook className="h-5 w-5" />
                 <span className="sr-only">Facebook</span>
@@ -35,8 +35,9 @@ export default function Footer() {
               <a
                 href="https://twitter.com"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary"
+                aria-label="Síguenos en Twitter"
               >
                 <Twitter className="h-5 w-5" />
                 <span className="sr-only">Twitter</span>
@@ -44,8 +45,9 @@ export default function Footer() {
               <a
                 href="https://instagram.com"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary"
+                aria-label="Síguenos en Instagram"
               >
                 <Instagram className="h-5 w-5" />
                 <span className="sr-only">Instagram</span>
@@ -53,8 +55,9 @@ export default function Footer() {
               <a
                 href="https://youtube.com"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary"
+                aria-label="Síguenos en YouTube"
               >
                 <Youtube className="h-5 w-5" />
                 <span className="sr-only">YouTube</span>

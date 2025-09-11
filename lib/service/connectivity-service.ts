@@ -1,6 +1,9 @@
+
 /**
  * Servicio para verificar conectividad de red y backend
  */
+
+import React from 'react';
 
 interface ConnectivityStatus {
   isOnline: boolean;

@@ -109,69 +109,73 @@ export default function Header() {
                 >
                   Catálogo
                 </Link>
-                    <div className="flex flex-col">
-      <button
-        type="button"
-        className="flex items-center justify-between w-full text-lg font-medium text-muted-foreground hover:text-primary transition-colors"
-        onClick={() => setIsVentasOpen(!isVentasOpen)} // Controla el estado
-      >
-        Ventas
-        <ChevronDown
-          className={`h-4 w-4 transition-transform duration-200 ${isVentasOpen ? "rotate-180" : ""}`}
-        />
-      </button>
+                {/* Menú de Ventas con Submenú */}
+                <div className="flex flex-col">
+                  <button
+                    type="button"
+                    className="flex items-center justify-between w-full text-lg font-medium text-muted-foreground hover:text-primary transition-colors py-2"
+                    onClick={() => setIsVentasOpen(!isVentasOpen)}
+                    aria-expanded={isVentasOpen}
+                    aria-controls="ventas-submenu"
+                    aria-label="Abrir menú de Ventas"
+                  >
+                    <span>Ventas</span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform duration-200 ${isVentasOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
 
-      {/* Submenú: Vender Auto, Ver Subastas, Mis Subastas */}
-      {isVentasOpen && (
-        <div className="flex flex-col gap-2 mt-2 ml-2 border-l-2 border-gray-200 pl-2">
-          {/* Vender Auto */}
-          {canAccessFeature('upload-car') ? (
-            <Link
-              href="/upload-car"
-              onClick={handleSheetLinkClick}
-              className="text-base transition-colors hover:text-primary"
-            >
-              Vender Auto
-            </Link>
-          ) : userStatus === 'logueado' ? (
-            <span className="text-base text-muted-foreground flex items-center gap-1">
-              Vender Auto
-              <Badge variant="outline" className="text-xs">
-                <Shield className="h-3 w-3 mr-1" />
-                Requiere Verificación
-              </Badge>
-            </span>
-          ) : null}
+                  {/* Submenú: Vender Auto, Ver Subastas, Mis Subastas */}
+                  {isVentasOpen && (
+                    <div id="ventas-submenu" className="flex flex-col gap-2 mt-2 ml-4 border-l-2 border-primary/20 pl-4">
+                      {/* Vender Auto */}
+                      {canAccessFeature('upload-car') ? (
+                        <Link
+                          href="/upload-car"
+                          onClick={handleSheetLinkClick}
+                          className="text-base transition-colors hover:text-primary py-1 px-2 rounded hover:bg-accent/50"
+                        >
+                          Vender Auto
+                        </Link>
+                      ) : userStatus === 'logueado' ? (
+                        <span className="text-base text-muted-foreground flex items-center gap-2 py-1 px-2">
+                          Vender Auto
+                          <Badge variant="outline" className="text-xs">
+                            <Shield className="h-3 w-3 mr-1" />
+                            Requiere Verificación
+                          </Badge>
+                        </span>
+                      ) : null}
 
-          {/* Ver Subastas */}
-          {canAccessFeature('auctions') ? (
-            <Link
-              href="/auctions"
-              onClick={handleSheetLinkClick}
-              className="text-base transition-colors hover:text-primary"
-            >
-              Ver Subastas
-            </Link>
-          ) : userStatus === 'logueado' ? (
-            <span className="text-base text-muted-foreground flex items-center gap-1">
-              Subastas
-              <Badge variant="outline" className="text-xs">
-                <Shield className="h-3 w-3 mr-1" />
-                Requiere Verificación
-              </Badge>
-            </span>
-          ) : null}
+                      {/* Ver Subastas */}
+                      {canAccessFeature('auctions') ? (
+                        <Link
+                          href="/auctions"
+                          onClick={handleSheetLinkClick}
+                          className="text-base transition-colors hover:text-primary py-1 px-2 rounded hover:bg-accent/50"
+                        >
+                          Ver Subastas
+                        </Link>
+                      ) : userStatus === 'logueado' ? (
+                        <span className="text-base text-muted-foreground flex items-center gap-2 py-1 px-2">
+                          Subastas
+                          <Badge variant="outline" className="text-xs">
+                            <Shield className="h-3 w-3 mr-1" />
+                            Requiere Verificación
+                          </Badge>
+                        </span>
+                      ) : null}
 
-          {/* Mis Subastas */}
-          {canAccessFeature('auctions') && (
-            <Link
-              href="/my-auctions"
-              onClick={handleSheetLinkClick}
-              className="text-base transition-colors hover:text-primary"
-            >
-              Mis Subastas
-              </Link>
-          )}
+                      {/* Mis Subastas */}
+                      {canAccessFeature('auctions') && (
+                        <Link
+                          href="/my-auctions"
+                          onClick={handleSheetLinkClick}
+                          className="text-base transition-colors hover:text-primary py-1 px-2 rounded hover:bg-accent/50"
+                        >
+                          Mis Subastas
+                        </Link>
+                      )}
         </div>
       )}
     </div>
@@ -343,7 +347,7 @@ export default function Header() {
                       </Link>
                     </li>
                     <li>
-                      <Link href="/catalog/category/reparado"legacyBehavior passHref>
+                      <Link href="/catalog/category/reparado" legacyBehavior passHref>
                         <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
                           <div className="text-sm font-medium leading-none">Colección de Lujo</div>
                           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">

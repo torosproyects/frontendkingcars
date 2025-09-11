@@ -86,15 +86,17 @@ const UserInfoSection = ({
   status: UserStatus;
   progress: number;
 }) => (
-  <div className="flex flex-col space-y-3">
-    <div className="flex items-center space-x-3">
-      <Avatar className="h-12 w-12">
+  <div className="flex flex-col space-y-2">
+    <div className="flex items-center space-x-2">
+      <Avatar className="h-8 w-8">
         <AvatarImage src={user.avatar} alt={user.name} />
-        <AvatarFallback> {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}</AvatarFallback>
+        <AvatarFallback className="text-xs">{user?.name?.charAt(0)?.toUpperCase() ?? 'U'}</AvatarFallback>
       </Avatar>
-      <div className="flex-1">
-       {user?.name && ( 
-          <p className="text-sm font-medium leading-none truncate">{user.name}  </p>
+      <div className="flex-1 min-w-0">
+        {user?.name && ( 
+          <p className="text-sm font-medium leading-none truncate" title={user.name}>
+            {user.name}
+          </p>
         )}
         <p
           className="text-xs leading-none text-muted-foreground mt-1 truncate"
@@ -105,22 +107,22 @@ const UserInfoSection = ({
       </div>
     </div>
 
-    <div className="space-y-2">
+    <div className="space-y-1">
       <UserStatusIndicator status={status} />
 
       {status === "logueado" && (
         <div className="space-y-1">
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Progreso de verificación</span>
+            <span>Progreso</span>
             <span>{progress}%</span>
           </div>
-          <Progress value={progress} className="h-2" />
+          <Progress value={progress} className="h-1.5" />
         </div>
       )}
 
       {status === "verificado" && user.role && (
         <div className="text-xs text-muted-foreground">
-          Rol: <span className="font-medium capitalize">{user.role}</span>
+          <span className="font-medium capitalize">{user.role}</span>
         </div>
       )}
     </div>
@@ -135,15 +137,19 @@ const MenuItem = ({
   onClick,
 }: {
   href?: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon?: React.ComponentType<{ className?: string }>;
   children: React.ReactNode;
   className?: string;
   onClick?: () => void;
 }) => {
-  const content = (
+  const content = Icon ? (
     <div className="flex items-center gap-2 text-sm">
       <Icon className="h-4 w-4" />
       <span>{children}</span>
+    </div>
+  ) : (
+    <div className="text-sm">
+      {children}
     </div>
   );
 
@@ -203,24 +209,6 @@ export function UserMenu() {
 
   return (
     <div className="flex items-center gap-2">
-      {userStatus === "logueado" && (
-        <Button
-          variant="default"
-          size="sm"
-          className={cn(
-            "flex gap-2 items-center text-white",
-            "bg-orange-600 hover:bg-orange-700",
-            "animate-pulse hover:animate-none transition-all"
-          )}
-          asChild
-        >
-          <Link href="/profile/verification">
-            <ShieldAlert className="h-4 w-4" />
-            <span className="text-sm">Verificar Cuenta</span>
-          </Link>
-        </Button>
-      )}
-
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -233,7 +221,7 @@ export function UserMenu() {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent
-          className="w-[90vw] sm:w-80 max-w-sm"
+          className="w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto"
           align="end"
           forceMount
         >
@@ -242,6 +230,24 @@ export function UserMenu() {
           </DropdownMenuLabel>
 
           <DropdownMenuSeparator />
+          
+          {userStatus === "logueado" && (
+            <DropdownMenuItem asChild className="bg-orange-50 text-orange-700 hover:bg-orange-100 focus:bg-orange-100">
+              <Link href="/profile/verification" className="w-full py-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <ShieldAlert className="h-4 w-4" />
+                  <span>Verificar Cuenta</span>
+                  <Badge variant="secondary" className="text-xs ml-auto">
+                    Pendiente
+                  </Badge>
+                </div>
+              </Link>
+            </DropdownMenuItem>
+          )}
+          
+          <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Perfil
+          </DropdownMenuLabel>
           <MenuItem href="/profile" icon={User}>Mi Perfil</MenuItem>
           <MenuItem href="/profile/edit" icon={Edit}>Editar Perfil</MenuItem>
           <MenuItem href="/profile/change-password" icon={Key}>Cambiar Contraseña</MenuItem>
@@ -294,10 +300,16 @@ export function UserMenu() {
           <DropdownMenuSeparator />
           <MenuItem
             icon={LogOut}
-            className="text-destructive focus:text-destructive"
+            className="text-destructive focus:text-destructive hover:bg-destructive/10"
             onClick={handleLogout}
           >
-            {loggingOut ? "Cerrando..." : "Cerrar Sesión"}
+            <div className="flex items-center gap-2 text-sm">
+              <LogOut className="h-4 w-4" />
+              <span>{loggingOut ? "Cerrando..." : "Cerrar Sesión"}</span>
+              {loggingOut && (
+                <div className="ml-auto h-4 w-4 animate-spin rounded-full border-2 border-destructive border-t-transparent" />
+              )}
+            </div>
           </MenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
