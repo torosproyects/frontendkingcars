@@ -1,20 +1,26 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { HeroBanner } from '@/components/hero-banner';
-import { SearchFilters } from '@/components/search-filters';
 import dynamic from 'next/dynamic';
 
 // Lazy load FeaturedCars para mejorar rendimiento inicial
 const FeaturedCars = dynamic(() => import('@/components/featured-cars').then(mod => ({ default: mod.FeaturedCars })), {
   loading: () => (
-    <div className="flex items-center justify-center py-12">
-      <div className="text-center">
-        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-muted-foreground">Cargando vehículos destacados...</p>
-      </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div key={index} className="animate-pulse">
+          <div className="bg-gray-200 h-48 w-full rounded-lg mb-4"></div>
+          <div className="space-y-2">
+            <div className="bg-gray-200 h-4 w-3/4 rounded"></div>
+            <div className="bg-gray-200 h-6 w-1/2 rounded"></div>
+            <div className="bg-gray-200 h-3 w-full rounded"></div>
+            <div className="bg-gray-200 h-3 w-2/3 rounded"></div>
+          </div>
+        </div>
+      ))}
     </div>
   ),
-  ssr: false
+  ssr: false // Cambiar a false para evitar problemas de hidratación
 });
 
 export default function Home() {
@@ -23,13 +29,6 @@ export default function Home() {
       {/* Sección Hero */}
       <HeroBanner />
       
-      {/* Sección de Búsqueda y Filtros */}
-      <section className="w-full py-8 px-4 md:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6">Encuentra Tu Auto Perfecto</h2>
-          <SearchFilters />
-        </div>
-      </section>
       
       {/* Autos Destacados */}
       <section className="w-full py-12 px-4 md:px-6 lg:px-8 bg-muted/50">

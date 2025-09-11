@@ -1,7 +1,7 @@
 import { User } from '@/lib/types/auth';
 
 // Configuración de la API
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 // Función para hacer peticiones HTTP
 async function apiRequest<T>(

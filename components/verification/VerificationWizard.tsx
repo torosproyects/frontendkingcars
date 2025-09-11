@@ -182,6 +182,32 @@ export function VerificationWizard() {
         return false;
       }
       
+      // Para el quinto paso, validamos que todos los documentos requeridos estén capturados
+      if (currentStep === 'documents') {
+        const documents = watchedData.documents;
+        console.log('validateCurrentStep - Documents validation:', {
+          accountType: watchedData.accountType,
+          documents: documents,
+          cif: documents?.cif,
+          tallerRegistro: documents?.tallerRegistro,
+          dni: documents?.dni
+        });
+        if (watchedData.accountType === 'Taller') {
+          const isValid = !!(documents?.cif && documents?.tallerRegistro);
+          console.log('validateCurrentStep - Taller documents valid:', isValid);
+          return isValid;
+        } else if (watchedData.accountType === 'Usuario') {
+          const isValid = !!(documents?.dni);
+          console.log('validateCurrentStep - Usuario documents valid:', isValid);
+          return isValid;
+        } else if (watchedData.accountType === 'Empresa') {
+          const isValid = !!(documents?.cif && documents?.dni);
+          console.log('validateCurrentStep - Empresa documents valid:', isValid);
+          return isValid;
+        }
+        return false;
+      }
+      
       const schema = getCurrentSchema();
       await schema.parseAsync(watchedData);
       return true;
@@ -380,7 +406,29 @@ export function VerificationWizard() {
         }
         return false;
       case 'documents':
-        return true; // Se valida en goToNextStep
+        // Validar que todos los documentos requeridos estén capturados
+        const documents = watchedData.documents;
+        console.log('Documents validation:', {
+          accountType: watchedData.accountType,
+          documents: documents,
+          cif: documents?.cif,
+          tallerRegistro: documents?.tallerRegistro,
+          dni: documents?.dni
+        });
+        if (watchedData.accountType === 'Taller') {
+          const isValid = !!(documents?.cif && documents?.tallerRegistro);
+          console.log('Taller documents valid:', isValid);
+          return isValid;
+        } else if (watchedData.accountType === 'Usuario') {
+          const isValid = !!(documents?.dni);
+          console.log('Usuario documents valid:', isValid);
+          return isValid;
+        } else if (watchedData.accountType === 'Empresa') {
+          const isValid = !!(documents?.cif && documents?.dni);
+          console.log('Empresa documents valid:', isValid);
+          return isValid;
+        }
+        return false;
       case 'review':
         return false; // No hay siguiente paso
       default:

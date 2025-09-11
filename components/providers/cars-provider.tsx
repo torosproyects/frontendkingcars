@@ -8,9 +8,8 @@ export default function CarsProvider({ children }: { children: React.ReactNode }
   const hasInitialized = useRef(false);
 
   useEffect(() => {
-    // Solo cargar una vez al inicializar si no hay carros
+    // Cargar carros INMEDIATAMENTE, sin esperar auth
     if (!hasInitialized.current && allCars.length === 0 && !loading) {
-      console.log("CarsProvider: Inicializando carga de carros");
       hasInitialized.current = true;
       fetchCars(true); // Forzar carga
     }

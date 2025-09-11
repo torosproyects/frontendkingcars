@@ -24,14 +24,19 @@ export interface MotionButtonProps extends ButtonHTMLAttributes<HTMLButtonElemen
 
 // Create a simple motion div component
 const MotionDiv = forwardRef<HTMLDivElement, MotionProps>(
-  ({ children, className, style, ...props }, ref) => {
+  ({ children, className, style, initial, animate, transition, ...props }, ref) => {
+    // Only apply transition if animation props are provided
+    const shouldAnimate = initial || animate || transition;
+    
     return (
       <div 
         ref={ref} 
         className={className} 
         style={{ 
           ...style,
-          transition: "all 0.5s ease-out",
+          ...(shouldAnimate && {
+            transition: transition?.duration ? `opacity ${transition.duration}s ease-out, transform ${transition.duration}s ease-out` : "opacity 0.3s ease-out, transform 0.3s ease-out",
+          }),
         }}
       >
         {children}
@@ -43,14 +48,19 @@ MotionDiv.displayName = "MotionDiv";
 
 // Create a simple motion button component
 const MotionButton = forwardRef<HTMLButtonElement, MotionButtonProps>(
-  ({ children, className, style, ...props }, ref) => {
+  ({ children, className, style, initial, animate, transition, ...props }, ref) => {
+    // Only apply transition if animation props are provided
+    const shouldAnimate = initial || animate || transition;
+    
     return (
       <button 
         ref={ref} 
         className={className} 
         style={{ 
           ...style,
-          transition: "all 0.5s ease-out",
+          ...(shouldAnimate && {
+            transition: transition?.duration ? `opacity ${transition.duration}s ease-out, transform ${transition.duration}s ease-out` : "opacity 0.3s ease-out, transform 0.3s ease-out",
+          }),
         }}
         {...props}
       >

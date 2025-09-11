@@ -1,4 +1,6 @@
 import { LoginCredentials, RegisterData, AuthResponse, User, VerifyCredentials, ResendCredentials } from '@/lib/types/auth';
+import { connectivityService } from '../service/connectivity-service';
+import { fetchWithRetry, withRetry, isNetworkError } from '../utils/retry-utils';
 
 // Configuración de la API
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -7,24 +9,46 @@ interface ProfileResponse {
   user: User;
 }
 
-// Función para hacer peticiones HTTP
+// Función para hacer peticiones HTTP con reintentos robustos
 async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   
-  const config: RequestInit = {
-    credentials: 'include', 
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  };
-
+  // Verificar conectividad antes de hacer llamadas
   try {
-    const response = await fetch(url, config);
+    const connectivityStatus = await connectivityService.checkFullConnectivity();
+    
+    if (!connectivityStatus.isOnline) {
+      throw new Error('Sin conectividad de red');
+    }
+    
+    if (!connectivityStatus.backendReachable) {
+      // Backend no disponible, pero continuar con intentos
+      console.warn('Backend no disponible, pero continuando con intentos...');
+    }
+  } catch (connectivityError) {
+    // Continuar con los intentos aunque falle la verificación de conectividad
+    console.warn('Error verificando conectividad, continuando...');
+  }
+
+  // Usar sistema de reintentos robusto
+  return withRetry(async () => {
+    const response = await fetchWithRetry(url, {
+      credentials: 'include', 
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    }, {
+      maxRetries: 3,
+      baseDelay: 1000,
+      maxDelay: 5000,
+      backoffMultiplier: 2,
+      timeoutMs: 10000
+    });
     
     // Si la respuesta no es ok, intentar extraer el mensaje de error
     if (!response.ok) {
@@ -41,12 +65,13 @@ async function apiRequest<T>(
     }
 
     return await response.json();
-  } catch (error) {
-    if (error instanceof TypeError) {
-      throw new Error('Error de conexión. Verifica tu conexión a internet.');
-    }
-    throw error;
-  }
+  }, {
+    maxRetries: 2, // Reintentos adicionales a nivel de función
+    baseDelay: 2000,
+    maxDelay: 8000,
+    backoffMultiplier: 2,
+    timeoutMs: 15000
+  });
 }
 
 // API de autenticación para backend real
@@ -160,7 +185,6 @@ getCurrentUser: async (): Promise<User> => {
 
   // Obtener perfil del usuario
   getProfile: async (): Promise<User> => {
-   
     const response = await apiRequest<ProfileResponse>('/auth/profile', {
       method: 'GET',
       credentials: 'include', // Muy importante para enviar cookies

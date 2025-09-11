@@ -39,8 +39,8 @@ interface CarsStore {
   getCarById: (id: string) => Carro | undefined;
 }
 
-// Tiempo de cache en milisegundos (5 minutos)
-const CACHE_TIME = 5 * 60 * 1000;
+// Tiempo de cache en milisegundos (2 minutos para carga más fresca)
+const CACHE_TIME = 2 * 60 * 1000;
 
 export const useCarsStore = create<CarsStore>((set, get) => ({
   allCars: [],
@@ -52,39 +52,43 @@ export const useCarsStore = create<CarsStore>((set, get) => ({
   filters: {},
   lastFetch: null,
 
-  // Cargar todos los carros con cache
+  // Cargar todos los carros con cache optimizado
   fetchCars: async (force = false) => {
     const { allCars, lastFetch } = get();
     
-    console.log('fetchCars llamado:', { force, allCarsLength: allCars.length, lastFetch });
+    console.log('🚗 fetchCars llamado:', { force, allCarsLength: allCars.length, lastFetch });
     
+    // Cache más inteligente - solo usar cache si no es forzado y hay datos recientes
     if (!force && allCars.length > 0 && lastFetch && Date.now() - lastFetch < CACHE_TIME) {
-      console.log('Usando cache, no cargando carros');
+      console.log('✅ Usando cache, no cargando carros');
       return;
     }
 
-    console.log('Iniciando carga de carros...');
+    console.log('🔄 Iniciando carga de carros...');
     set({ loading: true, error: null });
     
     try {
+      const startTime = Date.now();
       const backendCars = await getAllCars();
-      console.log('Carros obtenidos del backend:', backendCars.length);
+      const loadTime = Date.now() - startTime;
+      
+      console.log(`✅ Carros obtenidos del backend: ${backendCars.length} (${loadTime}ms)`);
       
       const transformedCars = transformBackendToFrontend(backendCars);
-      console.log('Carros transformados:', transformedCars.length);
+      console.log(`🔄 Carros transformados: ${transformedCars.length}`);
       
       set({ 
         allCars: transformedCars,
         filteredCars: transformedCars,
-        currentPage: 1 ,
+        currentPage: 1,
         loading: false,
         lastFetch: Date.now()
       });
       
-      console.log('Carros guardados en el store');
+      console.log('✅ Carros guardados en el store exitosamente');
       
     } catch (error) {
-      console.error('Error al cargar carros:', error);
+      console.error('❌ Error al cargar carros:', error);
       set({ 
         error: error instanceof Error ? error.message : 'Error desconocido',
         loading: false 
