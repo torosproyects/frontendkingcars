@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import React, { useState } from 'react';
@@ -7,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/lib/store/auth-store';
-import { VerificationData, VerificationStep, AccountType } from '@/types/verification';
+import { VerificationData, VerificationStep, AccountType, validateAge, validateDocument } from '@/types/verification';
 import { Form } from '@/components/ui/form';
 
 import { ProgressIndicator } from './ProgressIndicator';
@@ -25,29 +27,47 @@ const baseSchema = z.object({
   email: z.string().email('Email inválido'),
   phone: z.string().min(9, 'Número de teléfono inválido'),
   phoneVerified: z.boolean(),
-  accountType: z.enum(['Taller', 'Usuario', 'Empresa']),
+  accountType: z.enum(['Particular', 'Empresa', 'Autónomo']),
+  
+  // Nueva información personal común
+  fechaNacimiento: z.string().min(1, 'Fecha de nacimiento requerida')
+    .refine((date) => validateAge(date), 'Debes ser mayor de 20 años'),
+  documento: z.object({
+    tipo: z.enum(['NIF', 'DNI', 'TIE', 'NIE']),
+    numero: z.string().min(1, 'Número de documento requerido'),
+  }).superRefine((data, ctx) => {
+    if (data.tipo && data.numero) {
+      if (!validateDocument(data.tipo, data.numero)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Número de documento inválido',
+          path: ['numero'],
+        });
+      }
+    }
+  }),
+  
+  // Nueva información de dirección común
+  direccion: z.string().min(5, 'Dirección requerida'),
+  codigoPostal: z.string().min(4, 'Código postal requerido'),
+  pais: z.string().min(2, 'País requerido'),
+  ciudad: z.string().min(2, 'Ciudad requerida'),
+  estado: z.string().min(2, 'Estado/Provincia requerido'),
 });
 
-const tallerSchema = baseSchema.extend({
-  tallerData: z.object({
-    nombreTaller: z.string().min(2, 'Nombre del taller requerido'),
+const particularSchema = baseSchema.extend({
+  particularData: z.object({
+    // Solo campos específicos de particular (si los hay)
+  }).optional(),
+});
+
+const autonomoSchema = baseSchema.extend({
+  autonomoData: z.object({
+    nombreComercial: z.string().min(2, 'Nombre comercial requerido'),
     cif: z.string().min(8, 'CIF inválido'),
     numeroRegistro: z.string().min(1, 'Número de registro requerido'),
-    direccion: z.string().min(5, 'Dirección requerida'),
-    codigoPostal: z.string().min(5, 'Código postal inválido'),
-    provincia: z.string().min(1, 'Provincia requerida'),
     telefono: z.string().min(9, 'Teléfono inválido'),
     email: z.string().email('Email inválido'),
-  }),
-});
-
-const usuarioSchema = baseSchema.extend({
-  usuarioData: z.object({
-    dni: z.string().min(8, 'DNI/NIE inválido'),
-    fechaNacimiento: z.string().min(1, 'Fecha de nacimiento requerida'),
-    direccion: z.string().min(5, 'Dirección requerida'),
-    codigoPostal: z.string().min(5, 'Código postal inválido'),
-    provincia: z.string().min(1, 'Provincia requerida'),
   }),
 });
 
@@ -55,9 +75,6 @@ const empresaSchema = baseSchema.extend({
   empresaData: z.object({
     razonSocial: z.string().min(2, 'Razón social requerida'),
     cif: z.string().min(8, 'CIF inválido'),
-    direccionFiscal: z.string().min(5, 'Dirección fiscal requerida'),
-    codigoPostal: z.string().min(5, 'Código postal inválido'),
-    provincia: z.string().min(1, 'Provincia requerida'),
     telefono: z.string().min(9, 'Teléfono inválido'),
     emailCorporativo: z.string().email('Email corporativo inválido'),
     representanteLegal: z.object({
@@ -87,30 +104,34 @@ export function VerificationWizard() {
       email: user?.email || '',
       phone: '',
       phoneVerified: false,
-      accountType: 'Usuario',
-      tallerData: {
-        nombreTaller: '',
+      accountType: 'Particular',
+      
+      // Nueva información personal común
+      fechaNacimiento: '',
+      documento: {
+        tipo: 'DNI',
+        numero: '',
+      },
+      
+      // Nueva información de dirección común
+      direccion: '',
+      codigoPostal: '',
+      pais: 'ES', // España por defecto
+      ciudad: '',
+      estado: '',
+      
+      // Datos específicos por tipo
+      particularData: {},
+      autonomoData: {
+        nombreComercial: '',
         cif: '',
         numeroRegistro: '',
-        direccion: '',
-        codigoPostal: '',
-        provincia: '',
         telefono: '',
         email: '',
-      },
-      usuarioData: {
-        dni: '',
-        fechaNacimiento: '',
-        direccion: '',
-        codigoPostal: '',
-        provincia: '',
       },
       empresaData: {
         razonSocial: '',
         cif: '',
-        direccionFiscal: '',
-        codigoPostal: '',
-        provincia: '',
         telefono: '',
         emailCorporativo: '',
         representanteLegal: {
@@ -129,8 +150,8 @@ export function VerificationWizard() {
 
   const getCurrentSchema = () => {
     switch (watchedData.accountType) {
-      case 'Taller': return tallerSchema;
-      case 'Usuario': return usuarioSchema;
+      case 'Particular': return particularSchema;
+      case 'Autónomo': return autonomoSchema;
       case 'Empresa': return empresaSchema;
       default: return baseSchema;
     }
@@ -148,9 +169,31 @@ export function VerificationWizard() {
         console.log('Validating basic-info:', {
           firstName: watchedData.firstName,
           lastName: watchedData.lastName,
-          email: watchedData.email
+          email: watchedData.email,
+          fechaNacimiento: watchedData.fechaNacimiento,
+          documento: watchedData.documento,
+          direccion: watchedData.direccion,
+          codigoPostal: watchedData.codigoPostal,
+          pais: watchedData.pais,
+          ciudad: watchedData.ciudad,
+          estado: watchedData.estado
         });
-        return !!(watchedData.firstName && watchedData.lastName && watchedData.email);
+        
+        return !!(
+          watchedData.firstName && 
+          watchedData.lastName && 
+          watchedData.email &&
+          watchedData.fechaNacimiento &&
+          validateAge(watchedData.fechaNacimiento) &&
+          watchedData.documento.tipo &&
+          watchedData.documento.numero &&
+          validateDocument(watchedData.documento.tipo, watchedData.documento.numero) &&
+          watchedData.direccion &&
+          watchedData.codigoPostal &&
+          watchedData.pais &&
+          watchedData.ciudad &&
+          watchedData.estado
+        );
       }
       
       // Para el tercer paso, validamos que el teléfono esté verificado
@@ -164,18 +207,17 @@ export function VerificationWizard() {
       
       // Para el cuarto paso, validamos campos específicos según el tipo de cuenta
       if (currentStep === 'specific-info') {
-        if (watchedData.accountType === 'Taller') {
-          const tallerData = watchedData.tallerData;
-          return !!(tallerData?.nombreTaller && tallerData?.cif && tallerData?.direccion && 
-                   tallerData?.codigoPostal && tallerData?.provincia);
-        } else if (watchedData.accountType === 'Usuario') {
-          const usuarioData = watchedData.usuarioData;
-          return !!(usuarioData?.dni && usuarioData?.fechaNacimiento && usuarioData?.direccion && 
-                   usuarioData?.codigoPostal && usuarioData?.provincia);
+        if (watchedData.accountType === 'Autónomo') {
+          const autonomoData = watchedData.autonomoData;
+          return !!(autonomoData?.nombreComercial && autonomoData?.cif && autonomoData?.numeroRegistro &&
+                   autonomoData?.telefono && autonomoData?.email);
+        } else if (watchedData.accountType === 'Particular') {
+          // Los particulares no necesitan campos específicos adicionales
+          return true;
         } else if (watchedData.accountType === 'Empresa') {
           const empresaData = watchedData.empresaData;
-          return !!(empresaData?.razonSocial && empresaData?.cif && empresaData?.direccionFiscal && 
-                   empresaData?.codigoPostal && empresaData?.provincia && empresaData?.representanteLegal?.nombre &&
+          return !!(empresaData?.razonSocial && empresaData?.cif && empresaData?.telefono &&
+                   empresaData?.emailCorporativo && empresaData?.representanteLegal?.nombre &&
                    empresaData?.representanteLegal?.dni && empresaData?.representanteLegal?.cargo &&
                    empresaData?.representanteLegal?.telefono && empresaData?.representanteLegal?.email);
         }
@@ -189,16 +231,16 @@ export function VerificationWizard() {
           accountType: watchedData.accountType,
           documents: documents,
           cif: documents?.cif,
-          tallerRegistro: documents?.tallerRegistro,
+          autonomoRegistro: documents?.autonomoRegistro,
           dni: documents?.dni
         });
-        if (watchedData.accountType === 'Taller') {
-          const isValid = !!(documents?.cif && documents?.tallerRegistro);
-          console.log('validateCurrentStep - Taller documents valid:', isValid);
+        if (watchedData.accountType === 'Autónomo') {
+          const isValid = !!(documents?.cif && documents?.autonomoRegistro);
+          console.log('validateCurrentStep - Autónomo documents valid:', isValid);
           return isValid;
-        } else if (watchedData.accountType === 'Usuario') {
+        } else if (watchedData.accountType === 'Particular') {
           const isValid = !!(documents?.dni);
-          console.log('validateCurrentStep - Usuario documents valid:', isValid);
+          console.log('validateCurrentStep - Particular documents valid:', isValid);
           return isValid;
         } else if (watchedData.accountType === 'Empresa') {
           const isValid = !!(documents?.cif && documents?.dni);
@@ -279,11 +321,11 @@ export function VerificationWizard() {
     }, 100);
   };
 
-  const handleDocumentCapture = (type: 'dni' | 'cif' | 'tallerRegistro', dataUrl: string) => {
+  const handleDocumentCapture = (type: 'dni' | 'cif' | 'autonomoRegistro', dataUrl: string) => {
     form.setValue(`documents.${type}`, dataUrl);
   };
 
-  const handleDocumentDelete = (type: 'dni' | 'cif' | 'tallerRegistro') => {
+  const handleDocumentDelete = (type: 'dni' | 'cif' | 'autonomoRegistro') => {
     form.setValue(`documents.${type}`, '');
   };
 
@@ -376,11 +418,30 @@ export function VerificationWizard() {
           firstName: watchedData.firstName,
           lastName: watchedData.lastName,
           email: watchedData.email,
-          firstNameValid: !!watchedData.firstName,
-          lastNameValid: !!watchedData.lastName,
-          emailValid: !!watchedData.email
+          fechaNacimiento: watchedData.fechaNacimiento,
+          documento: watchedData.documento,
+          direccion: watchedData.direccion,
+          codigoPostal: watchedData.codigoPostal,
+          pais: watchedData.pais,
+          ciudad: watchedData.ciudad,
+          estado: watchedData.estado
         });
-        return watchedData.firstName && watchedData.lastName && watchedData.email;
+        
+        return !!(
+          watchedData.firstName && 
+          watchedData.lastName && 
+          watchedData.email &&
+          watchedData.fechaNacimiento &&
+          validateAge(watchedData.fechaNacimiento) &&
+          watchedData.documento.tipo &&
+          watchedData.documento.numero &&
+          validateDocument(watchedData.documento.tipo, watchedData.documento.numero) &&
+          watchedData.direccion &&
+          watchedData.codigoPostal &&
+          watchedData.pais &&
+          watchedData.ciudad &&
+          watchedData.estado
+        );
       case 'phone-verification':
         console.log('Phone verification validation:', {
           phoneVerified: watchedData.phoneVerified,
@@ -389,18 +450,17 @@ export function VerificationWizard() {
         return watchedData.phoneVerified;
       case 'specific-info':
         // Validar campos específicos según el tipo de cuenta
-        if (watchedData.accountType === 'Taller') {
-          const tallerData = watchedData.tallerData;
-          return !!(tallerData?.nombreTaller && tallerData?.cif && tallerData?.direccion && 
-                   tallerData?.codigoPostal && tallerData?.provincia);
-        } else if (watchedData.accountType === 'Usuario') {
-          const usuarioData = watchedData.usuarioData;
-          return !!(usuarioData?.dni && usuarioData?.fechaNacimiento && usuarioData?.direccion && 
-                   usuarioData?.codigoPostal && usuarioData?.provincia);
+        if (watchedData.accountType === 'Autónomo') {
+          const autonomoData = watchedData.autonomoData;
+          return !!(autonomoData?.nombreComercial && autonomoData?.cif && autonomoData?.numeroRegistro &&
+                   autonomoData?.telefono && autonomoData?.email);
+        } else if (watchedData.accountType === 'Particular') {
+          // Los particulares no necesitan campos específicos adicionales
+          return true;
         } else if (watchedData.accountType === 'Empresa') {
           const empresaData = watchedData.empresaData;
-          return !!(empresaData?.razonSocial && empresaData?.cif && empresaData?.direccionFiscal && 
-                   empresaData?.codigoPostal && empresaData?.provincia && empresaData?.representanteLegal?.nombre &&
+          return !!(empresaData?.razonSocial && empresaData?.cif && empresaData?.telefono &&
+                   empresaData?.emailCorporativo && empresaData?.representanteLegal?.nombre &&
                    empresaData?.representanteLegal?.dni && empresaData?.representanteLegal?.cargo &&
                    empresaData?.representanteLegal?.telefono && empresaData?.representanteLegal?.email);
         }
@@ -412,16 +472,16 @@ export function VerificationWizard() {
           accountType: watchedData.accountType,
           documents: documents,
           cif: documents?.cif,
-          tallerRegistro: documents?.tallerRegistro,
+          autonomoRegistro: documents?.autonomoRegistro,
           dni: documents?.dni
         });
-        if (watchedData.accountType === 'Taller') {
-          const isValid = !!(documents?.cif && documents?.tallerRegistro);
-          console.log('Taller documents valid:', isValid);
+        if (watchedData.accountType === 'Autónomo') {
+          const isValid = !!(documents?.cif && documents?.autonomoRegistro);
+          console.log('Autónomo documents valid:', isValid);
           return isValid;
-        } else if (watchedData.accountType === 'Usuario') {
+        } else if (watchedData.accountType === 'Particular') {
           const isValid = !!(documents?.dni);
-          console.log('Usuario documents valid:', isValid);
+          console.log('Particular documents valid:', isValid);
           return isValid;
         } else if (watchedData.accountType === 'Empresa') {
           const isValid = !!(documents?.cif && documents?.dni);
@@ -483,3 +543,5 @@ export function VerificationWizard() {
     </div>
   );
 }
+
+

@@ -4,7 +4,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { AccountType } from '@/types/verification';
-import { Wrench, User, Building2 } from 'lucide-react';
+import { User, Building2, Briefcase } from 'lucide-react';
 import { ValidationLabel } from './ValidationLabel';
 
 interface AccountTypeSelectionProps {
@@ -14,22 +14,8 @@ interface AccountTypeSelectionProps {
 
 const accountTypes = [
   {
-    type: 'Taller' as AccountType,
-    title: 'Taller',
-    description: 'Para talleres mecánicos y servicios automotrices',
-    icon: Wrench,
-    features: [
-      'Gestión de servicios',
-      'Control de inventario',
-      'Clientes y citas',
-      'Facturación'
-    ],
-    color: 'bg-orange-50 border-orange-200 hover:border-orange-300',
-    selectedColor: 'bg-orange-100 border-orange-500'
-  },
-  {
-    type: 'Usuario' as AccountType,
-    title: 'Usuario',
+    type: 'Particular' as AccountType,
+    title: 'Particular',
     description: 'Para particulares que compran y venden vehículos',
     icon: User,
     features: [
@@ -40,6 +26,20 @@ const accountTypes = [
     ],
     color: 'bg-blue-50 border-blue-200 hover:border-blue-300',
     selectedColor: 'bg-blue-100 border-blue-500'
+  },
+  {
+    type: 'Autónomo' as AccountType,
+    title: 'Autónomo',
+    description: 'Para trabajadores autónomos del sector automotriz',
+    icon: Briefcase,
+    features: [
+      'Gestión de servicios',
+      'Control de inventario',
+      'Clientes y citas',
+      'Facturación'
+    ],
+    color: 'bg-orange-50 border-orange-200 hover:border-orange-300',
+    selectedColor: 'bg-orange-100 border-orange-500'
   },
   {
     type: 'Empresa' as AccountType,
@@ -146,3 +146,5 @@ export function AccountTypeSelection({ selectedType, onSelect }: AccountTypeSele
     </div>
   );
 }
+
+

@@ -15,10 +15,10 @@ interface DocumentsStepProps {
   documents: {
     dni?: string;
     cif?: string;
-    tallerRegistro?: string;
+    autonomoRegistro?: string;
   };
-  onDocumentCapture: (type: 'dni' | 'cif' | 'tallerRegistro', dataUrl: string) => void;
-  onDocumentDelete: (type: 'dni' | 'cif' | 'tallerRegistro') => void;
+  onDocumentCapture: (type: 'dni' | 'cif' | 'autonomoRegistro', dataUrl: string) => void;
+  onDocumentDelete: (type: 'dni' | 'cif' | 'autonomoRegistro') => void;
 }
 
 export function DocumentsStep({ 
@@ -28,7 +28,7 @@ export function DocumentsStep({
   onDocumentDelete 
 }: DocumentsStepProps) {
   const [showCameraModal, setShowCameraModal] = useState(false);
-  const [currentDocumentType, setCurrentDocumentType] = useState<'dni' | 'cif' | 'tallerRegistro' | null>(null);
+  const [currentDocumentType, setCurrentDocumentType] = useState<'dni' | 'cif' | 'autonomoRegistro' | null>(null);
 
   // Filtrar templates según el tipo de cuenta
   const requiredTemplates = documentTemplates.filter(template => 
@@ -39,16 +39,16 @@ export function DocumentsStep({
     switch (templateId) {
       case 1: return documents.dni;
       case 2: return documents.cif;
-      case 3: return documents.tallerRegistro;
+      case 3: return documents.autonomoRegistro;
       default: return undefined;
     }
   };
 
-  const getDocumentType = (templateId: number): 'dni' | 'cif' | 'tallerRegistro' => {
+  const getDocumentType = (templateId: number): 'dni' | 'cif' | 'autonomoRegistro' => {
     switch (templateId) {
       case 1: return 'dni';
       case 2: return 'cif';
-      case 3: return 'tallerRegistro';
+      case 3: return 'autonomoRegistro';
       default: return 'dni';
     }
   };
