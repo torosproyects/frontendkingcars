@@ -28,12 +28,26 @@ export function SpecificInfoStep({ form, accountType }: SpecificInfoStepProps) {
       </CardHeader>
       
       <CardContent className="space-y-4">
-        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-sm text-blue-700">
-            Como usuario particular, no necesitas información adicional específica. 
-            Todos los datos requeridos ya han sido completados en el paso anterior.
-          </p>
-        </div>
+        <FormField
+          control={form.control}
+          name="particularData.numeroReciboServicio"
+          render={({ field }) => (
+            <FormItem>
+              <ValidationLabel 
+                show={!field.value || field.value.length < 1} 
+                message="Número de recibo requerido" 
+              />
+              <FormLabel>Número de Recibo de Servicio</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="Ej: 2024-001234" 
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </CardContent>
     </Card>
   );
@@ -53,17 +67,17 @@ export function SpecificInfoStep({ form, accountType }: SpecificInfoStepProps) {
       <CardContent className="space-y-4">
         <FormField
           control={form.control}
-          name="autonomoData.nombreComercial"
+          name="autonomoData.altaAutonomo"
           render={({ field }) => (
             <FormItem>
               <ValidationLabel 
-                show={!field.value || field.value.length < 2} 
-                message="Nombre comercial requerido" 
+                show={!field.value || field.value.length < 1} 
+                message="Alta de autónomo requerida" 
               />
-              <FormLabel>Nombre Comercial</FormLabel>
+              <FormLabel>Alta de Autónomo</FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="Pérez Automoción" 
+                  placeholder="Ej: Alta 15/03/2024" 
                   {...field} 
                 />
               </FormControl>
@@ -74,17 +88,17 @@ export function SpecificInfoStep({ form, accountType }: SpecificInfoStepProps) {
         
         <FormField
           control={form.control}
-          name="autonomoData.cif"
+          name="autonomoData.reta"
           render={({ field }) => (
             <FormItem>
               <ValidationLabel 
-                show={!field.value || field.value.length < 9} 
-                message="CIF requerido" 
+                show={!field.value || field.value.length < 1} 
+                message="RETA requerido" 
               />
-              <FormLabel>CIF</FormLabel>
+              <FormLabel>RETA</FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="A12345678" 
+                  placeholder="Ej: RETA-2024-001" 
                   {...field} 
                 />
               </FormControl>
@@ -92,74 +106,6 @@ export function SpecificInfoStep({ form, accountType }: SpecificInfoStepProps) {
             </FormItem>
           )}
         />
-        
-        <FormField
-          control={form.control}
-          name="autonomoData.numeroRegistro"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Número de Registro de Autónomo</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="AUT-2024-001" 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="autonomoData.telefono"
-            render={({ field }) => (
-              <FormItem>
-                <ValidationLabel 
-                  show={!field.value || field.value.length < 9} 
-                  message="Teléfono requerido" 
-                />
-                <FormLabel className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  Teléfono
-                </FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="+34 600 123 456" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="autonomoData.email"
-            render={({ field }) => (
-              <FormItem>
-                <ValidationLabel 
-                  show={!field.value || !field.value.includes('@')} 
-                  message="Email requerido" 
-                />
-                <FormLabel className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Email
-                </FormLabel>
-                <FormControl>
-                  <Input 
-                    type="email"
-                    placeholder="contacto@perezautomocion.com" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
       </CardContent>
     </Card>
   );
@@ -177,27 +123,6 @@ export function SpecificInfoStep({ form, accountType }: SpecificInfoStepProps) {
       </CardHeader>
       
       <CardContent className="space-y-4">
-        <FormField
-          control={form.control}
-          name="empresaData.razonSocial"
-          render={({ field }) => (
-            <FormItem>
-              <ValidationLabel 
-                show={!field.value || field.value.length < 2} 
-                message="Razón social requerida" 
-              />
-              <FormLabel>Razón Social</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Pérez Automoción S.L." 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
         <FormField
           control={form.control}
           name="empresaData.cif"
@@ -219,177 +144,26 @@ export function SpecificInfoStep({ form, accountType }: SpecificInfoStepProps) {
           )}
         />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="empresaData.telefono"
-            render={({ field }) => (
-              <FormItem>
-                <ValidationLabel 
-                  show={!field.value || field.value.length < 9} 
-                  message="Teléfono requerido" 
+        <FormField
+          control={form.control}
+          name="empresaData.numeroEscrituraConstitucion"
+          render={({ field }) => (
+            <FormItem>
+              <ValidationLabel 
+                show={!field.value || field.value.length < 1} 
+                message="Número de escritura requerido" 
+              />
+              <FormLabel>Número de Escritura de Constitución</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="Ej: Escritura 1234 de 15/03/2024" 
+                  {...field} 
                 />
-                <FormLabel className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  Teléfono
-                </FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="+34 91 123 4567" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="empresaData.emailCorporativo"
-            render={({ field }) => (
-              <FormItem>
-                <ValidationLabel 
-                  show={!field.value || !field.value.includes('@')} 
-                  message="Email corporativo requerido" 
-                />
-                <FormLabel className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Email Corporativo
-                </FormLabel>
-                <FormControl>
-                  <Input 
-                    type="email"
-                    placeholder="info@perezautomocion.com" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Representante Legal */}
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
-          <h4 className="font-medium text-gray-900 mb-4">Representante Legal</h4>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="empresaData.representanteLegal.nombre"
-              render={({ field }) => (
-                <FormItem>
-                  <ValidationLabel 
-                    show={!field.value || field.value.length < 2} 
-                    message="Nombre del representante requerido" 
-                  />
-                  <FormLabel>Nombre Completo</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Juan Pérez García" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="empresaData.representanteLegal.dni"
-              render={({ field }) => (
-                <FormItem>
-                  <ValidationLabel 
-                    show={!field.value || field.value.length < 8} 
-                    message="DNI del representante requerido" 
-                  />
-                  <FormLabel>DNI/NIE</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="12345678A" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <FormField
-              control={form.control}
-              name="empresaData.representanteLegal.cargo"
-              render={({ field }) => (
-                <FormItem>
-                  <ValidationLabel 
-                    show={!field.value || field.value.length < 2} 
-                    message="Cargo requerido" 
-                  />
-                  <FormLabel>Cargo</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Administrador" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="empresaData.representanteLegal.telefono"
-              render={({ field }) => (
-                <FormItem>
-                  <ValidationLabel 
-                    show={!field.value || field.value.length < 9} 
-                    message="Teléfono del representante requerido" 
-                  />
-                  <FormLabel className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    Teléfono
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="+34 600 123 456" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <FormField
-            control={form.control}
-            name="empresaData.representanteLegal.email"
-            render={({ field }) => (
-              <FormItem className="mt-4">
-                <ValidationLabel 
-                  show={!field.value || !field.value.includes('@')} 
-                  message="Email del representante requerido" 
-                />
-                <FormLabel className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Email
-                </FormLabel>
-                <FormControl>
-                  <Input 
-                    type="email"
-                    placeholder="juan.perez@perezautomocion.com" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </CardContent>
     </Card>
   );

@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { VerificationData, VerificationStep, AccountType, validateAge, validateDocument } from '@/types/verification';
 import { Form } from '@/components/ui/form';
+import { VerificationService } from '@/lib/api/verification';
 
 import { ProgressIndicator } from './ProgressIndicator';
 import { AccountTypeSelection } from './AccountTypeSelection';
@@ -57,33 +58,21 @@ const baseSchema = z.object({
 
 const particularSchema = baseSchema.extend({
   particularData: z.object({
-    // Solo campos específicos de particular (si los hay)
-  }).optional(),
+    numeroReciboServicio: z.string().min(1, 'Número de recibo requerido'),
+  }),
 });
 
 const autonomoSchema = baseSchema.extend({
   autonomoData: z.object({
-    nombreComercial: z.string().min(2, 'Nombre comercial requerido'),
-    cif: z.string().min(8, 'CIF inválido'),
-    numeroRegistro: z.string().min(1, 'Número de registro requerido'),
-    telefono: z.string().min(9, 'Teléfono inválido'),
-    email: z.string().email('Email inválido'),
+    altaAutonomo: z.string().min(1, 'Alta de autónomo requerida'),
+    reta: z.string().min(1, 'RETA requerido'),
   }),
 });
 
 const empresaSchema = baseSchema.extend({
   empresaData: z.object({
-    razonSocial: z.string().min(2, 'Razón social requerida'),
     cif: z.string().min(8, 'CIF inválido'),
-    telefono: z.string().min(9, 'Teléfono inválido'),
-    emailCorporativo: z.string().email('Email corporativo inválido'),
-    representanteLegal: z.object({
-      nombre: z.string().min(2, 'Nombre del representante requerido'),
-      dni: z.string().min(8, 'DNI/NIE del representante inválido'),
-      cargo: z.string().min(2, 'Cargo requerido'),
-      telefono: z.string().min(9, 'Teléfono del representante inválido'),
-      email: z.string().email('Email del representante inválido'),
-    }),
+    numeroEscrituraConstitucion: z.string().min(1, 'Número de escritura requerido'),
   }),
 });
 
@@ -121,26 +110,16 @@ export function VerificationWizard() {
       estado: '',
       
       // Datos específicos por tipo
-      particularData: {},
+      particularData: {
+        numeroReciboServicio: '',
+      },
       autonomoData: {
-        nombreComercial: '',
-        cif: '',
-        numeroRegistro: '',
-        telefono: '',
-        email: '',
+        altaAutonomo: '',
+        reta: '',
       },
       empresaData: {
-        razonSocial: '',
         cif: '',
-        telefono: '',
-        emailCorporativo: '',
-        representanteLegal: {
-          nombre: '',
-          dni: '',
-          cargo: '',
-          telefono: '',
-          email: '',
-        },
+        numeroEscrituraConstitucion: '',
       },
       documents: {},
     },
@@ -166,20 +145,7 @@ export function VerificationWizard() {
       
       // Para el segundo paso, validamos los campos básicos
       if (currentStep === 'basic-info') {
-        console.log('Validating basic-info:', {
-          firstName: watchedData.firstName,
-          lastName: watchedData.lastName,
-          email: watchedData.email,
-          fechaNacimiento: watchedData.fechaNacimiento,
-          documento: watchedData.documento,
-          direccion: watchedData.direccion,
-          codigoPostal: watchedData.codigoPostal,
-          pais: watchedData.pais,
-          ciudad: watchedData.ciudad,
-          estado: watchedData.estado
-        });
-        
-        return !!(
+         return !!(
           watchedData.firstName && 
           watchedData.lastName && 
           watchedData.email &&
@@ -198,28 +164,20 @@ export function VerificationWizard() {
       
       // Para el tercer paso, validamos que el teléfono esté verificado
       if (currentStep === 'phone-verification') {
-        console.log('Validating phone-verification:', {
-          phoneVerified: watchedData.phoneVerified,
-          phone: watchedData.phone
-        });
-        return !!watchedData.phoneVerified;
+          return !!watchedData.phoneVerified;
       }
       
       // Para el cuarto paso, validamos campos específicos según el tipo de cuenta
       if (currentStep === 'specific-info') {
-        if (watchedData.accountType === 'Autónomo') {
+        if (watchedData.accountType === 'Particular') {
+          const particularData = watchedData.particularData;
+          return !!(particularData?.numeroReciboServicio);
+        } else if (watchedData.accountType === 'Autónomo') {
           const autonomoData = watchedData.autonomoData;
-          return !!(autonomoData?.nombreComercial && autonomoData?.cif && autonomoData?.numeroRegistro &&
-                   autonomoData?.telefono && autonomoData?.email);
-        } else if (watchedData.accountType === 'Particular') {
-          // Los particulares no necesitan campos específicos adicionales
-          return true;
+          return !!(autonomoData?.altaAutonomo && autonomoData?.reta);
         } else if (watchedData.accountType === 'Empresa') {
           const empresaData = watchedData.empresaData;
-          return !!(empresaData?.razonSocial && empresaData?.cif && empresaData?.telefono &&
-                   empresaData?.emailCorporativo && empresaData?.representanteLegal?.nombre &&
-                   empresaData?.representanteLegal?.dni && empresaData?.representanteLegal?.cargo &&
-                   empresaData?.representanteLegal?.telefono && empresaData?.representanteLegal?.email);
+          return !!(empresaData?.cif && empresaData?.numeroEscrituraConstitucion);
         }
         return false;
       }
@@ -227,25 +185,21 @@ export function VerificationWizard() {
       // Para el quinto paso, validamos que todos los documentos requeridos estén capturados
       if (currentStep === 'documents') {
         const documents = watchedData.documents;
-        console.log('validateCurrentStep - Documents validation:', {
-          accountType: watchedData.accountType,
-          documents: documents,
-          cif: documents?.cif,
-          autonomoRegistro: documents?.autonomoRegistro,
-          dni: documents?.dni
-        });
-        if (watchedData.accountType === 'Autónomo') {
-          const isValid = !!(documents?.cif && documents?.autonomoRegistro);
-          console.log('validateCurrentStep - Autónomo documents valid:', isValid);
-          return isValid;
-        } else if (watchedData.accountType === 'Particular') {
-          const isValid = !!(documents?.dni);
-          console.log('validateCurrentStep - Particular documents valid:', isValid);
-          return isValid;
+        
+        if (!documents?.documentoIdentidad) {
+          return false;
+        }
+        
+        if (watchedData.accountType === 'Particular') {
+          const isValid = !!(documents?.reciboServicio && documents?.certificadoBancario);
+            return isValid;
+        } else if (watchedData.accountType === 'Autónomo') {
+          const isValid = !!(documents?.altaAutonomo && documents?.reta && documents?.certificadoBancario);
+             return isValid;
         } else if (watchedData.accountType === 'Empresa') {
-          const isValid = !!(documents?.cif && documents?.dni);
-          console.log('validateCurrentStep - Empresa documents valid:', isValid);
-          return isValid;
+          const isValid = !!(documents?.escriturasConstitucion && documents?.iaeAno && 
+                            documents?.tarjetaCif && documents?.certificadoTitularidadBancaria);
+           return isValid;
         }
         return false;
       }
@@ -321,32 +275,55 @@ export function VerificationWizard() {
     }, 100);
   };
 
-  const handleDocumentCapture = (type: 'dni' | 'cif' | 'autonomoRegistro', dataUrl: string) => {
+  const handleDocumentCapture = (type: 'documentoIdentidad', dataUrl: string) => {
     form.setValue(`documents.${type}`, dataUrl);
   };
 
-  const handleDocumentDelete = (type: 'dni' | 'cif' | 'autonomoRegistro') => {
+  const handleDocumentDelete = (type: 'documentoIdentidad') => {
     form.setValue(`documents.${type}`, '');
+  };
+
+  const handleFileUpload = (type: string, file: File) => {
+    form.setValue(`documents.${type}` as any, file);
+  };
+
+  const handleFileDelete = (type: string) => {
+    form.setValue(`documents.${type}` as any, undefined);
   };
 
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      // Aquí iría la lógica para enviar los datos al backend
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulación
+      // Obtener todos los datos del formulario
+      const formData = form.getValues();
       
-      await refreshUser();
+      // Llamar al backend real
+      const response = await VerificationService.submitVerification(formData);
       
-      toast({
-        title: "¡Solicitud enviada!",
-        description: "Tu solicitud de verificación ha sido enviada exitosamente"
-      });
-      
-      router.push('/');
+      if (response.success) {
+        await refreshUser();
+        
+        toast({
+          title: "¡Solicitud enviada!",
+          description: response.message || "Tu solicitud de verificación ha sido enviada exitosamente"
+        });
+        
+        router.push('/');
+      } else {
+        throw new Error(response.message || 'Error enviando la solicitud');
+      }
     } catch (error) {
+      console.error('Error submitting verification:', error);
+      
+      let errorMessage = "No se pudo enviar la solicitud. Intenta nuevamente.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error",
-        description: "No se pudo enviar la solicitud. Intenta nuevamente.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -392,6 +369,8 @@ export function VerificationWizard() {
             documents={watchedData.documents}
             onDocumentCapture={handleDocumentCapture}
             onDocumentDelete={handleDocumentDelete}
+            onFileUpload={handleFileUpload}
+            onFileDelete={handleFileDelete}
           />
         );
       
@@ -450,19 +429,15 @@ export function VerificationWizard() {
         return watchedData.phoneVerified;
       case 'specific-info':
         // Validar campos específicos según el tipo de cuenta
-        if (watchedData.accountType === 'Autónomo') {
+        if (watchedData.accountType === 'Particular') {
+          const particularData = watchedData.particularData;
+          return !!(particularData?.numeroReciboServicio);
+        } else if (watchedData.accountType === 'Autónomo') {
           const autonomoData = watchedData.autonomoData;
-          return !!(autonomoData?.nombreComercial && autonomoData?.cif && autonomoData?.numeroRegistro &&
-                   autonomoData?.telefono && autonomoData?.email);
-        } else if (watchedData.accountType === 'Particular') {
-          // Los particulares no necesitan campos específicos adicionales
-          return true;
+          return !!(autonomoData?.altaAutonomo && autonomoData?.reta);
         } else if (watchedData.accountType === 'Empresa') {
           const empresaData = watchedData.empresaData;
-          return !!(empresaData?.razonSocial && empresaData?.cif && empresaData?.telefono &&
-                   empresaData?.emailCorporativo && empresaData?.representanteLegal?.nombre &&
-                   empresaData?.representanteLegal?.dni && empresaData?.representanteLegal?.cargo &&
-                   empresaData?.representanteLegal?.telefono && empresaData?.representanteLegal?.email);
+          return !!(empresaData?.cif && empresaData?.numeroEscrituraConstitucion);
         }
         return false;
       case 'documents':
@@ -471,20 +446,25 @@ export function VerificationWizard() {
         console.log('Documents validation:', {
           accountType: watchedData.accountType,
           documents: documents,
-          cif: documents?.cif,
-          autonomoRegistro: documents?.autonomoRegistro,
-          dni: documents?.dni
+          documentoIdentidad: documents?.documentoIdentidad
         });
-        if (watchedData.accountType === 'Autónomo') {
-          const isValid = !!(documents?.cif && documents?.autonomoRegistro);
-          console.log('Autónomo documents valid:', isValid);
-          return isValid;
-        } else if (watchedData.accountType === 'Particular') {
-          const isValid = !!(documents?.dni);
+        
+        // Foto de documento de identidad es obligatoria para todos
+        if (!documents?.documentoIdentidad) {
+          return false;
+        }
+        
+        if (watchedData.accountType === 'Particular') {
+          const isValid = !!(documents?.reciboServicio && documents?.certificadoBancario);
           console.log('Particular documents valid:', isValid);
           return isValid;
+        } else if (watchedData.accountType === 'Autónomo') {
+          const isValid = !!(documents?.altaAutonomo && documents?.reta && documents?.certificadoBancario);
+          console.log('Autónomo documents valid:', isValid);
+          return isValid;
         } else if (watchedData.accountType === 'Empresa') {
-          const isValid = !!(documents?.cif && documents?.dni);
+          const isValid = !!(documents?.escriturasConstitucion && documents?.iaeAno && 
+                            documents?.tarjetaCif && documents?.certificadoTitularidadBancaria);
           console.log('Empresa documents valid:', isValid);
           return isValid;
         }

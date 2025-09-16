@@ -2,6 +2,8 @@ export type AccountType = 'Particular' | 'Empresa' | 'Autónomo';
 
 export type VerificationStep = 'account-type' | 'basic-info' | 'phone-verification' | 'specific-info' | 'documents' | 'review';
 
+export type DocumentType = 'photo' | 'pdf';
+
 export interface VerificationData {
   // Información básica común
   firstName: string;
@@ -29,38 +31,35 @@ export interface VerificationData {
   
   // Datos específicos para Particular
   particularData?: {
-    // Solo campos específicos de particular (si los hay)
+    numeroReciboServicio: string;
   };
   
   // Datos específicos para Autónomo
   autonomoData?: {
-    nombreComercial: string;
-    cif: string;
-    numeroRegistro: string;
-    telefono: string;
-    email: string;
+    altaAutonomo: string;
+    reta: string;
   };
   
   // Datos específicos para Empresa
   empresaData?: {
-    razonSocial: string;
     cif: string;
-    telefono: string;
-    emailCorporativo: string;
-    representanteLegal: {
-      nombre: string;
-      dni: string;
-      cargo: string;
-      telefono: string;
-      email: string;
-    };
+    numeroEscrituraConstitucion: string;
   };
   
   // Documentos capturados
   documents: {
-    dni?: string; // base64 data URL
-    cif?: string; // base64 data URL
-    autonomoRegistro?: string; // base64 data URL
+    // Foto obligatoria para todos (base64)
+    documentoIdentidad?: string;
+    
+    // PDFs específicos por tipo (File objects)
+    reciboServicio?: File; // Particular
+    certificadoBancario?: File; // Particular + Autónomo
+    altaAutonomo?: File; // Autónomo
+    reta?: File; // Autónomo
+    escriturasConstitucion?: File; // Empresa
+    iaeAno?: File; // Empresa
+    tarjetaCif?: File; // Empresa
+    certificadoTitularidadBancaria?: File; // Empresa
   };
 }
 
@@ -68,43 +67,124 @@ export interface DocumentTemplate {
   id: number;
   label: string;
   description: string;
-  aspectRatio: '4/3' | '16/9' | '1/1' | '3/4';
-  referenceImage: string;
-  guidanceImage: string;
+  type: DocumentType; // 'photo' | 'pdf'
+  maxSize?: number; // Para PDFs en MB
+  acceptedFormats?: string[]; // ['pdf'] para documentos
+  aspectRatio?: '4/3' | '16/9' | '1/1' | '3/4'; // Solo para fotos
+  referenceImage?: string; // Solo para fotos
+  guidanceImage?: string; // Solo para fotos
   required: boolean;
   accountType: AccountType[];
 }
 
 export const documentTemplates: DocumentTemplate[] = [
+  // Foto obligatoria para todos
   {
     id: 1,
-    label: 'DNI/NIE',
-    description: 'Toma una foto clara de tu DNI o NIE',
+    label: 'Documento de Identidad',
+    description: 'Toma una foto clara de tu DNI, NIE o NIF',
+    type: 'photo',
     aspectRatio: '4/3',
     referenceImage: '/assets/dni-reference.png',
     guidanceImage: '/assets/dni-guide.png',
     required: true,
-    accountType: ['Particular', 'Empresa']
+    accountType: ['Particular', 'Autónomo', 'Empresa']
   },
+  
+  // PDFs para Particular
   {
     id: 2,
-    label: 'CIF de la Empresa',
-    description: 'Toma una foto clara del CIF de la empresa',
-    aspectRatio: '4/3',
-    referenceImage: '/assets/cif-reference.png',
-    guidanceImage: '/assets/cif-guide.png',
+    label: 'Recibo de Servicio',
+    description: 'Sube el recibo de servicio en formato PDF',
+    type: 'pdf',
+    maxSize: 10,
+    acceptedFormats: ['pdf'],
     required: true,
-    accountType: ['Autónomo', 'Empresa']
+    accountType: ['Particular']
   },
   {
     id: 3,
-    label: 'Registro de Autónomo',
-    description: 'Toma una foto del documento de registro de autónomo',
-    aspectRatio: '4/3',
-    referenceImage: '/assets/autonomo-reference.png',
-    guidanceImage: '/assets/autonomo-guide.png',
+    label: 'Certificado Bancario',
+    description: 'Sube el certificado bancario en formato PDF',
+    type: 'pdf',
+    maxSize: 10,
+    acceptedFormats: ['pdf'],
+    required: true,
+    accountType: ['Particular']
+  },
+  
+  // PDFs para Autónomo
+  {
+    id: 4,
+    label: 'Alta de Autónomo',
+    description: 'Sube el documento de alta de autónomo en formato PDF',
+    type: 'pdf',
+    maxSize: 10,
+    acceptedFormats: ['pdf'],
     required: true,
     accountType: ['Autónomo']
+  },
+  {
+    id: 5,
+    label: 'RETA',
+    description: 'Sube el documento RETA en formato PDF',
+    type: 'pdf',
+    maxSize: 10,
+    acceptedFormats: ['pdf'],
+    required: true,
+    accountType: ['Autónomo']
+  },
+  {
+    id: 6,
+    label: 'Certificado Bancario',
+    description: 'Sube el certificado bancario en formato PDF',
+    type: 'pdf',
+    maxSize: 10,
+    acceptedFormats: ['pdf'],
+    required: true,
+    accountType: ['Autónomo']
+  },
+  
+  // PDFs para Empresa
+  {
+    id: 7,
+    label: 'Escrituras de Constitución',
+    description: 'Sube las escrituras de constitución en formato PDF',
+    type: 'pdf',
+    maxSize: 10,
+    acceptedFormats: ['pdf'],
+    required: true,
+    accountType: ['Empresa']
+  },
+  {
+    id: 8,
+    label: 'IAE del Año',
+    description: 'Sube el IAE del año en formato PDF',
+    type: 'pdf',
+    maxSize: 10,
+    acceptedFormats: ['pdf'],
+    required: true,
+    accountType: ['Empresa']
+  },
+  {
+    id: 9,
+    label: 'Tarjeta CIF',
+    description: 'Sube la tarjeta CIF en formato PDF',
+    type: 'pdf',
+    maxSize: 10,
+    acceptedFormats: ['pdf'],
+    required: true,
+    accountType: ['Empresa']
+  },
+  {
+    id: 10,
+    label: 'Certificado de Titularidad Bancaria',
+    description: 'Sube el certificado de titularidad bancaria en formato PDF',
+    type: 'pdf',
+    maxSize: 10,
+    acceptedFormats: ['pdf'],
+    required: true,
+    accountType: ['Empresa']
   }
 ];
 

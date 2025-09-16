@@ -6,29 +6,59 @@ import { Button } from '@/components/ui/button';
 import { Camera, CheckCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AccountType, documentTemplates, DocumentTemplate } from '@/types/verification';
+import { PhotoTemplate } from '@/types/camara';
 import CameraModal from '@/components/camara/CameraModal';
-import PhotoSlot from '@/components/camara/PhotoSlot';
+import { DocumentSlot } from './DocumentSlot';
 import { ValidationLabel } from './ValidationLabel';
 
 interface DocumentsStepProps {
   accountType: AccountType;
   documents: {
-    dni?: string;
-    cif?: string;
-    autonomoRegistro?: string;
+    // Foto obligatoria para todos (base64)
+    documentoIdentidad?: string;
+    
+    // PDFs específicos por tipo (File objects)
+    reciboServicio?: File; // Particular
+    certificadoBancario?: File; // Particular + Autónomo
+    altaAutonomo?: File; // Autónomo
+    reta?: File; // Autónomo
+    escriturasConstitucion?: File; // Empresa
+    iaeAno?: File; // Empresa
+    tarjetaCif?: File; // Empresa
+    certificadoTitularidadBancaria?: File; // Empresa
   };
-  onDocumentCapture: (type: 'dni' | 'cif' | 'autonomoRegistro', dataUrl: string) => void;
-  onDocumentDelete: (type: 'dni' | 'cif' | 'autonomoRegistro') => void;
+  onDocumentCapture: (type: 'documentoIdentidad', dataUrl: string) => void;
+  onDocumentDelete: (type: 'documentoIdentidad') => void;
+  onFileUpload: (type: string, file: File) => void;
+  onFileDelete: (type: string) => void;
 }
+
+// Helper function to convert DocumentTemplate to PhotoTemplate
+const convertToPhotoTemplate = (docTemplate: DocumentTemplate): PhotoTemplate | null => {
+  if (docTemplate.type === 'photo' && docTemplate.aspectRatio && docTemplate.referenceImage) {
+    return {
+      id: docTemplate.id,
+      label: docTemplate.label,
+      description: docTemplate.description,
+      aspectRatio: docTemplate.aspectRatio,
+      referenceImage: docTemplate.referenceImage,
+      required: docTemplate.required,
+      guidanceImage: docTemplate.guidanceImage
+    };
+  }
+  return null;
+};
 
 export function DocumentsStep({ 
   accountType, 
   documents, 
   onDocumentCapture, 
-  onDocumentDelete 
+  onDocumentDelete,
+  onFileUpload,
+  onFileDelete
 }: DocumentsStepProps) {
   const [showCameraModal, setShowCameraModal] = useState(false);
-  const [currentDocumentType, setCurrentDocumentType] = useState<'dni' | 'cif' | 'autonomoRegistro' | null>(null);
+  const [currentDocumentType, setCurrentDocumentType] = useState<'documentoIdentidad' | null>(null);
 
   // Filtrar templates según el tipo de cuenta
   const requiredTemplates = documentTemplates.filter(template => 
@@ -37,25 +67,41 @@ export function DocumentsStep({
 
   const getDocumentValue = (templateId: number) => {
     switch (templateId) {
-      case 1: return documents.dni;
-      case 2: return documents.cif;
-      case 3: return documents.autonomoRegistro;
+      case 1: return documents.documentoIdentidad; // Foto para todos
+      case 2: return documents.reciboServicio; // Particular
+      case 3: return documents.certificadoBancario; // Particular
+      case 4: return documents.altaAutonomo; // Autónomo
+      case 5: return documents.reta; // Autónomo
+      case 6: return documents.certificadoBancario; // Autónomo
+      case 7: return documents.escriturasConstitucion; // Empresa
+      case 8: return documents.iaeAno; // Empresa
+      case 9: return documents.tarjetaCif; // Empresa
+      case 10: return documents.certificadoTitularidadBancaria; // Empresa
       default: return undefined;
     }
   };
 
-  const getDocumentType = (templateId: number): 'dni' | 'cif' | 'autonomoRegistro' => {
+  const getDocumentType = (templateId: number): 'documentoIdentidad' | string => {
     switch (templateId) {
-      case 1: return 'dni';
-      case 2: return 'cif';
-      case 3: return 'autonomoRegistro';
-      default: return 'dni';
+      case 1: return 'documentoIdentidad';
+      case 2: return 'reciboServicio';
+      case 3: return 'certificadoBancario';
+      case 4: return 'altaAutonomo';
+      case 5: return 'reta';
+      case 6: return 'certificadoBancario';
+      case 7: return 'escriturasConstitucion';
+      case 8: return 'iaeAno';
+      case 9: return 'tarjetaCif';
+      case 10: return 'certificadoTitularidadBancaria';
+      default: return 'documentoIdentidad';
     }
   };
 
   const handleCapture = (template: DocumentTemplate) => {
-    setCurrentDocumentType(getDocumentType(template.id));
-    setShowCameraModal(true);
+    if (template.type === 'photo') {
+      setCurrentDocumentType('documentoIdentidad');
+      setShowCameraModal(true);
+    }
   };
 
   const handleDocumentCapture = (dataUrl: string) => {
@@ -68,11 +114,22 @@ export function DocumentsStep({
 
   const handleDocumentDelete = (templateId: number) => {
     const docType = getDocumentType(templateId);
-    onDocumentDelete(docType);
+    if (docType === 'documentoIdentidad') {
+      onDocumentDelete(docType);
+    } else {
+      onFileDelete(docType);
+    }
+  };
+
+  const handleFileUpload = (templateId: number, file: File) => {
+    const docType = getDocumentType(templateId);
+    onFileUpload(docType, file);
   };
 
   const handleRetake = (template: DocumentTemplate) => {
-    handleCapture(template);
+    if (template.type === 'photo') {
+      handleCapture(template);
+    }
   };
 
   const getRequiredDocumentsCount = () => {
@@ -82,7 +139,11 @@ export function DocumentsStep({
   const getCompletedDocumentsCount = () => {
     return requiredTemplates.filter(template => {
       const docValue = getDocumentValue(template.id);
-      return docValue && docValue.length > 0;
+      if (template.type === 'photo') {
+        return docValue && typeof docValue === 'string' && docValue.length > 0;
+      } else {
+        return docValue && docValue instanceof File && docValue.size > 0;
+      }
     }).length;
   };
 
@@ -134,44 +195,26 @@ export function DocumentsStep({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {requiredTemplates.map((template) => {
           const documentValue = getDocumentValue(template.id);
-          const isCompleted = documentValue && documentValue.length > 0;
+          const isCompleted = template.type === 'photo' 
+            ? documentValue && typeof documentValue === 'string' && documentValue.length > 0
+            : documentValue && documentValue instanceof File && documentValue.size > 0;
           
           return (
-            <Card key={template.id} className={cn(
-              "transition-all",
-              isCompleted ? "border-green-500 bg-green-50" : "border-gray-200"
-            )}>
-              <CardHeader>
-                <ValidationLabel 
-                  show={!isCompleted} 
-                  message="Foto requerida" 
-                />
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  {isCompleted ? (
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 text-orange-500" />
-                  )}
-                  {template.label}
-                </CardTitle>
-                <CardDescription>
-                  {template.description}
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent>
-                <PhotoSlot
-                  template={template}
-                  capturedPhoto={documentValue ? {
-                    templateId: template.id,
-                    imageUrl: documentValue
-                  } : undefined}
-                  onCapture={() => handleCapture(template)}
-                  onDelete={() => handleDocumentDelete(template.id)}
-                  onRetake={() => handleRetake(template)}
-                />
-              </CardContent>
-            </Card>
+            <DocumentSlot
+              key={template.id}
+              template={template}
+              capturedPhoto={template.type === 'photo' && documentValue ? {
+                templateId: template.id,
+                imageUrl: documentValue as string
+              } : undefined}
+              uploadedFile={template.type === 'pdf' ? documentValue as File : undefined}
+              onCapture={() => handleCapture(template)}
+              onDelete={() => handleDocumentDelete(template.id)}
+              onRetake={() => handleRetake(template)}
+              onFileUpload={(file) => handleFileUpload(template.id, file)}
+              onFileDelete={() => handleDocumentDelete(template.id)}
+              onFileRetake={() => handleFileUpload(template.id, documentValue as File)}
+            />
           );
         })}
       </div>
@@ -203,9 +246,9 @@ export function DocumentsStep({
           setCurrentDocumentType(null);
         }}
         onCapture={handleDocumentCapture}
-        template={currentDocumentType ? requiredTemplates.find(t => 
-          getDocumentType(t.id) === currentDocumentType
-        ) || null : null}
+        template={currentDocumentType ? convertToPhotoTemplate(
+          requiredTemplates.find(t => t.type === 'photo' && t.id === 1)!
+        ) : null}
       />
     </div>
   );
