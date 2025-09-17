@@ -158,6 +158,15 @@ export interface VerificationData {
   };
 }
 
+// Importar tipos del panel de administración
+import { 
+  VerificationFilters, 
+  VerificationListResponse, 
+  VerificationDetailResponse, 
+  VerificationStatusUpdate, 
+  VerificationStatusResponse 
+} from '@/types/verification';
+
 export class VerificationService {
   // Enviar solicitud de verificación
   static async submitVerification(data: VerificationData): Promise<VerificationResponse> {
@@ -247,6 +256,93 @@ export class VerificationService {
       }
       
       throw new Error('Error desconocido enviando verificación');
+    }
+  }
+
+  // === FUNCIONES DEL PANEL DE ADMINISTRACIÓN ===
+
+  // Obtener todas las verificaciones pendientes (para administradores)
+  static async getPendingVerifications(filters: VerificationFilters = {}): Promise<VerificationListResponse> {
+    try {
+      const params = new URLSearchParams();
+      
+      // Agregar filtros como parámetros de consulta
+      if (filters.estado) params.append('estado', filters.estado);
+      if (filters.account_type_id) params.append('account_type_id', filters.account_type_id.toString());
+      if (filters.limit) params.append('limit', filters.limit.toString());
+      if (filters.offset) params.append('offset', filters.offset.toString());
+      if (filters.sort_by) params.append('sort_by', filters.sort_by);
+      if (filters.sort_order) params.append('sort_order', filters.sort_order);
+
+      const queryString = params.toString();
+      const endpoint = `/verification/pending${queryString ? `?${queryString}` : ''}`;
+
+      return await apiRequest<VerificationListResponse>(endpoint, {
+        method: 'GET',
+      });
+    } catch (error) {
+      console.error('Error fetching pending verifications:', error);
+      throw new Error(`Error obteniendo verificaciones: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
+  }
+
+  // Obtener una verificación específica con todos sus detalles
+  static async getVerificationById(id: number): Promise<VerificationDetailResponse> {
+    try {
+      return await apiRequest<VerificationDetailResponse>(`/verification/${id}`, {
+        method: 'GET',
+      });
+    } catch (error) {
+      console.error('Error fetching verification details:', error);
+      throw new Error(`Error obteniendo detalles de verificación: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
+  }
+
+  // Actualizar el estado de una verificación
+  static async updateVerificationStatus(id: number, data: VerificationStatusUpdate): Promise<VerificationStatusResponse> {
+    try {
+      return await apiRequest<VerificationStatusResponse>(`/verification/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error('Error updating verification status:', error);
+      throw new Error(`Error actualizando estado de verificación: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
+  }
+
+  // Descargar un documento específico
+  static async downloadDocument(documentId: number): Promise<Blob> {
+    try {
+      // Usar el mismo sistema de autenticación que las otras funciones
+      const response = await fetch(`${API_BASE_URL}/verification/download/${documentId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/pdf, application/octet-stream, */*',
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Error ${response.status}: ${response.statusText}`;
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // Si no se puede parsear el JSON, usar el mensaje por defecto
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      return await response.blob();
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      throw new Error(`Error descargando documento: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   }
 }

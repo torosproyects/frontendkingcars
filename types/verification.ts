@@ -1,226 +1,155 @@
-export type AccountType = 'Particular' | 'Empresa' | 'Autónomo';
+// Tipos para el panel de administración de verificaciones
 
-export type VerificationStep = 'account-type' | 'basic-info' | 'phone-verification' | 'specific-info' | 'documents' | 'review';
-
-export type DocumentType = 'photo' | 'pdf';
-
-export interface VerificationData {
-  // Información básica común
-  firstName: string;
-  lastName: string;
+export interface Verification {
+  id: number;
+  pre_registro_id: number;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
-  phoneVerified: boolean;
-  
-  // Nueva información personal común
-  fechaNacimiento: string; // con validación edad >= 20
-  documento: {
-    tipo: 'NIF' | 'DNI' | 'TIE' | 'NIE';
-    numero: string;
-  };
-  
-  // Nueva información de dirección común
+  fecha_nacimiento: string;
+  documento_tipo: string;
+  documento_numero: string;
+  documento_identidad_url: string;
+  documento_identidad_public_id: string;
   direccion: string;
-  codigoPostal: string;
-  pais: string; // código del país (ES, FR, etc.)
-  ciudad: string; // generado por API, editable
-  estado: string; // generado por API, editable
-  
-  // Información específica por tipo
-  accountType: AccountType;
-  
-  // Datos específicos para Particular
-  particularData?: {
-    numeroReciboServicio: string;
-  };
-  
-  // Datos específicos para Autónomo
-  autonomoData?: {
-    altaAutonomo: string;
-    reta: string;
-  };
-  
-  // Datos específicos para Empresa
-  empresaData?: {
-    cif: string;
-    numeroEscrituraConstitucion: string;
-  };
-  
-  // Documentos capturados
-  documents: {
-    // Foto obligatoria para todos (base64)
-    documentoIdentidad?: string;
-    
-    // PDFs específicos por tipo (File objects)
-    reciboServicio?: File; // Particular
-    certificadoBancario?: File; // Particular + Autónomo
-    altaAutonomo?: File; // Autónomo
-    reta?: File; // Autónomo
-    escriturasConstitucion?: File; // Empresa
-    iaeAno?: File; // Empresa
-    tarjetaCif?: File; // Empresa
-    certificadoTitularidadBancaria?: File; // Empresa
-  };
+  codigo_postal: string;
+  pais: string;
+  ciudad: string;
+  estado_provincia: string;
+  account_type_id: number;
+  account_type_name: string;
+  particular_data: string | null;
+  autonomo_data: string | null;
+  empresa_data: string | null;
+  estado: 'pendiente' | 'en_revision' | 'aprobada' | 'rechazada';
+  fecha_solicitud: string;
+  fecha_revision: string | null;
+  notas_revision: string | null;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
+  pre_registro_name: string;
+  pre_registro_email: string;
+  archivos: VerificationFile[];
 }
 
-export interface DocumentTemplate {
+export interface VerificationFile {
   id: number;
-  label: string;
-  description: string;
-  type: DocumentType; // 'photo' | 'pdf'
-  maxSize?: number; // Para PDFs en MB
-  acceptedFormats?: string[]; // ['pdf'] para documentos
-  aspectRatio?: '4/3' | '16/9' | '1/1' | '3/4'; // Solo para fotos
-  referenceImage?: string; // Solo para fotos
-  guidanceImage?: string; // Solo para fotos
-  required: boolean;
-  accountType: AccountType[];
+  tipo: string;
+  nombre: string;
+  tamaño: number;
+  fecha_subida: string;
 }
 
-export const documentTemplates: DocumentTemplate[] = [
-  // Foto obligatoria para todos
-  {
-    id: 1,
-    label: 'Documento de Identidad',
-    description: 'Toma una foto clara de tu DNI, NIE o NIF',
-    type: 'photo',
-    aspectRatio: '4/3',
-    referenceImage: '/assets/dni-reference.png',
-    guidanceImage: '/assets/dni-guide.png',
-    required: true,
-    accountType: ['Particular', 'Autónomo', 'Empresa']
-  },
-  
-  // PDFs para Particular
-  {
-    id: 2,
-    label: 'Recibo de Servicio',
-    description: 'Sube el recibo de servicio en formato PDF',
-    type: 'pdf',
-    maxSize: 10,
-    acceptedFormats: ['pdf'],
-    required: true,
-    accountType: ['Particular']
-  },
-  {
-    id: 3,
-    label: 'Certificado Bancario',
-    description: 'Sube el certificado bancario en formato PDF',
-    type: 'pdf',
-    maxSize: 10,
-    acceptedFormats: ['pdf'],
-    required: true,
-    accountType: ['Particular']
-  },
-  
-  // PDFs para Autónomo
-  {
-    id: 4,
-    label: 'Alta de Autónomo',
-    description: 'Sube el documento de alta de autónomo en formato PDF',
-    type: 'pdf',
-    maxSize: 10,
-    acceptedFormats: ['pdf'],
-    required: true,
-    accountType: ['Autónomo']
-  },
-  {
-    id: 5,
-    label: 'RETA',
-    description: 'Sube el documento RETA en formato PDF',
-    type: 'pdf',
-    maxSize: 10,
-    acceptedFormats: ['pdf'],
-    required: true,
-    accountType: ['Autónomo']
-  },
-  {
-    id: 6,
-    label: 'Certificado Bancario',
-    description: 'Sube el certificado bancario en formato PDF',
-    type: 'pdf',
-    maxSize: 10,
-    acceptedFormats: ['pdf'],
-    required: true,
-    accountType: ['Autónomo']
-  },
-  
-  // PDFs para Empresa
-  {
-    id: 7,
-    label: 'Escrituras de Constitución',
-    description: 'Sube las escrituras de constitución en formato PDF',
-    type: 'pdf',
-    maxSize: 10,
-    acceptedFormats: ['pdf'],
-    required: true,
-    accountType: ['Empresa']
-  },
-  {
-    id: 8,
-    label: 'IAE del Año',
-    description: 'Sube el IAE del año en formato PDF',
-    type: 'pdf',
-    maxSize: 10,
-    acceptedFormats: ['pdf'],
-    required: true,
-    accountType: ['Empresa']
-  },
-  {
-    id: 9,
-    label: 'Tarjeta CIF',
-    description: 'Sube la tarjeta CIF en formato PDF',
-    type: 'pdf',
-    maxSize: 10,
-    acceptedFormats: ['pdf'],
-    required: true,
-    accountType: ['Empresa']
-  },
-  {
-    id: 10,
-    label: 'Certificado de Titularidad Bancaria',
-    description: 'Sube el certificado de titularidad bancaria en formato PDF',
-    type: 'pdf',
-    maxSize: 10,
-    acceptedFormats: ['pdf'],
-    required: true,
-    accountType: ['Empresa']
-  }
-];
+export interface VerificationDetail extends Verification {
+  usuario_info: {
+    pre_registro_id: number;
+    name: string;
+    email: string;
+    fecha_registro: string;
+  };
+  documentos: {
+    documento_identidad: {
+      tipo: string;
+      url: string;
+      public_id: string;
+      formato: string;
+      almacenamiento: string;
+    };
+    archivos_pdf: PDFFile[];
+  };
+  resumen_documentos: {
+    total_archivos: number;
+    archivos_pdf: number;
+    foto_documento: number;
+    tipos_archivos: string[];
+    tamaño_total_pdf: number;
+  };
+}
 
-export const spanishProvinces = [
-  'Álava', 'Albacete', 'Alicante', 'Almería', 'Asturias', 'Ávila', 'Badajoz', 'Baleares',
-  'Barcelona', 'Burgos', 'Cáceres', 'Cádiz', 'Cantabria', 'Castellón', 'Ciudad Real',
-  'Córdoba', 'La Coruña', 'Cuenca', 'Girona', 'Granada', 'Guadalajara', 'Guipúzcoa',
-  'Huelva', 'Huesca', 'Jaén', 'León', 'Lleida', 'Lugo', 'Madrid', 'Málaga', 'Murcia',
-  'Navarra', 'Ourense', 'Palencia', 'Las Palmas', 'Pontevedra', 'La Rioja', 'Salamanca',
-  'Santa Cruz de Tenerife', 'Segovia', 'Sevilla', 'Soria', 'Tarragona', 'Teruel',
-  'Toledo', 'Valencia', 'Valladolid', 'Vizcaya', 'Zamora', 'Zaragoza'
-];
+export interface PDFFile {
+  id: number;
+  tipo: string;
+  nombre_original: string;
+  tamaño: number;
+  fecha_subida: string;
+  formato: string;
+  almacenamiento: string;
+  descarga_url: string;
+}
 
-// Validaciones de documentos por tipo
-export const documentValidations: Record<string, RegExp> = {
-  'DNI': /^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKE]$/i,
-  'NIE': /^[XYZ][0-9]{7}[TRWAGMYFPDXBNJZSQVHLCKE]$/i,
-  'NIF': /^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKE]$/i,
-  'TIE': /^[XYZ][0-9]{7}[TRWAGMYFPDXBNJZSQVHLCKE]$/i
-};
+export interface VerificationFilters {
+  estado?: string;
+  account_type_id?: number;
+  limit?: number;
+  offset?: number;
+  sort_by?: string;
+  sort_order?: 'ASC' | 'DESC';
+}
 
-// Validar documento según su tipo
-export const validateDocument = (tipo: string, numero: string): boolean => {
-  const pattern = documentValidations[tipo];
-  return pattern ? pattern.test(numero) : false;
-};
+export interface VerificationListResponse {
+  success: boolean;
+  data: {
+    verificaciones: Verification[];
+    pagination: {
+      limit: number;
+      offset: number;
+      total: number;
+      hasMore: boolean;
+    };
+    filters: {
+      estado: string | null;
+      account_type_id: number | null;
+      sort_by: string;
+      sort_order: string;
+    };
+    stats: {
+      total: number;
+      pendientes: number;
+      en_revision: number;
+      aprobadas: number;
+      rechazadas: number;
+      por_tipo: {
+        particulares: number;
+        autonomos: number;
+        empresas: number;
+      };
+    };
+  };
+}
 
-// Validar edad (debe ser mayor o igual a 20 años)
-export const validateAge = (fechaNacimiento: string): boolean => {
-  const birthDate = new Date(fechaNacimiento);
-  const today = new Date();
-  const age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    return age - 1 >= 20;
-  }
-  return age >= 20;
-};
+export interface VerificationDetailResponse {
+  success: boolean;
+  data: VerificationDetail;
+}
+
+export interface VerificationStatusUpdate {
+  estado: 'pendiente' | 'en_revision' | 'aprobada' | 'rechazada';
+  notas_revision?: string;
+}
+
+export interface VerificationStatusResponse {
+  success: boolean;
+  message: string;
+  verification: {
+    id: number;
+    estado: string;
+    fecha_solicitud: string;
+    fecha_revision: string;
+    notas_revision: string;
+    account_type_name: string;
+    archivos: VerificationFile[];
+  };
+}
+
+// Tipos para los filtros de la UI
+export interface FilterOption {
+  value: string | number;
+  label: string;
+}
+
+export interface VerificationFiltersUI {
+  estado: FilterOption[];
+  account_type: FilterOption[];
+  sort_by: FilterOption[];
+}

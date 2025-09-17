@@ -106,7 +106,7 @@ function Sidebar({
   return (
     <nav className="flex-1 space-y-2 mt-6">
       <SidebarItem icon={<Home size={18} />} label="Dashboard" href="/admin" router={router} onClickItem={onClickItem}/>
-      <SidebarItem icon={<Users size={18} />} label="Usuarios" href="/admin/usuarios" router={router} onClickItem={onClickItem}/>
+      <SidebarItem icon={<Users size={18} />} label="Verificaciones" href="/admin/verificaciones" router={router} onClickItem={onClickItem}/>
       <SidebarItem icon={<Car size={18} />} label="Vehículos" href="/admin/vehiculos" router={router} onClickItem={onClickItem}/>
       <SidebarItem icon={<Wrench size={18} />} label="Talleres" href="/admin/talleres" router={router} onClickItem={onClickItem}/>
       <SidebarItem icon={<BarChart2 size={18} />} label="Revisiones" href="/admin/revisiones" router={router} onClickItem={onClickItem}/>

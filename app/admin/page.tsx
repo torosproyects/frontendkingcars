@@ -1,15 +1,15 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Car, BarChart2, Wrench } from "lucide-react";
+import { Users, Car, BarChart2, Wrench, UserCheck } from "lucide-react";
 
 export default function AdminDashboard() {
   // 🔹 Datos mockeados (conecta luego a tu API)
   const stats = [
     {
-      title: "Usuarios Activos",
-      value: "1,245",
-      icon: <Users className="h-6 w-6 text-primary" />,
+      title: "Verificaciones Pendientes",
+      value: "23",
+      icon: <UserCheck className="h-6 w-6 text-primary" />,
     },
     {
       title: "Vehículos Pendientes",
@@ -57,6 +57,28 @@ export default function AdminDashboard() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="shadow-sm">
           <CardHeader>
+            <CardTitle>Últimas Verificaciones Pendientes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm">
+              <li className="flex justify-between">
+                <span>María García López</span>
+                <span className="text-muted-foreground">Particular</span>
+              </li>
+              <li className="flex justify-between">
+                <span>Carlos Rodríguez</span>
+                <span className="text-muted-foreground">Autónomo</span>
+              </li>
+              <li className="flex justify-between">
+                <span>Empresa ABC S.L.</span>
+                <span className="text-muted-foreground">Empresa</span>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader>
             <CardTitle>Últimos Vehículos Pendientes</CardTitle>
           </CardHeader>
           <CardContent>
@@ -72,28 +94,6 @@ export default function AdminDashboard() {
               <li className="flex justify-between">
                 <span>Tesla Model 3 2022</span>
                 <span className="text-muted-foreground">Pendiente</span>
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Actividad Reciente</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <span className="font-medium">Juan Pérez</span> publicó un{" "}
-                <span className="italic">Hyundai Tucson 2021</span>
-              </li>
-              <li>
-                <span className="font-medium">María López</span> se registró en
-                la plataforma
-              </li>
-              <li>
-                <span className="font-medium">Carlos Gómez</span> completó una
-                venta
               </li>
             </ul>
           </CardContent>
