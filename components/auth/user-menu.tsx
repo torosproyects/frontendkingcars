@@ -44,6 +44,7 @@ const STATUS_CONFIG = {
 
 const UserStatusIndicator = ({ status }: { status: UserStatus }) => {
   const config = STATUS_CONFIG[status] || STATUS_CONFIG.visitante;
+
   return (
     <div className="flex items-center justify-between">
       {config.badge}
@@ -186,6 +187,7 @@ export function UserMenu() {
 
   const userStatus = getUserStatus() as UserStatus;
   const progress = getVerificationProgress();
+  const isTaller = isDealer();
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -245,53 +247,54 @@ export function UserMenu() {
             </DropdownMenuItem>
           )}
           
-          <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Perfil
-          </DropdownMenuLabel>
-          <MenuItem href="/profile" icon={User}>Mi Perfil</MenuItem>
-          <MenuItem href="/profile/edit" icon={Edit}>Editar Perfil</MenuItem>
-          <MenuItem href="/profile/change-password" icon={Key}>Cambiar Contraseña</MenuItem>
-
-          {userStatus === "verificado" && (
+          {!isTaller && (
             <>
-              <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Funcionalidades
+                Perfil
               </DropdownMenuLabel>
+              <MenuItem href="/profile" icon={User}>Mi Perfil</MenuItem>
+              <MenuItem href="/profile/edit" icon={Edit}>Editar Perfil</MenuItem>
+              <MenuItem href="/profile/change-password" icon={Key}>Cambiar Contraseña</MenuItem>
 
-              {isCustomer() && (
-                <>
-                  <MenuItem href="/favorites" icon={Heart}>Mis Favoritos</MenuItem>
-                  <MenuItem href="/inquiries" icon={FileText}>Mis Consultas</MenuItem>
-                </>
-              )}
-
-              <MenuItem href="/auctions" icon={Gavel}>Ver Subastas</MenuItem>
-              <MenuItem href="/my-auctions" icon={BarChart3}>Mis Subastas</MenuItem>
-              <MenuItem href="/create-auction" icon={Plus}>Crear Subasta</MenuItem>
-
-              {isDealer() && (
+              {userStatus === "verificado" && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Vendedor
+                    Funcionalidades
                   </DropdownMenuLabel>
-                  <MenuItem href="/dealer/inventory" icon={Car}>Mi Inventario</MenuItem>
-                  <MenuItem href="/dealer/leads" icon={Users}>Clientes Potenciales</MenuItem>
-                  <MenuItem href="/taller" icon={Wrench}>Taller</MenuItem>
-                </>
-              )}
 
-              {isAdmin() && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Administración
-                  </DropdownMenuLabel>
-                  <MenuItem href="/admin" icon={BarChart3}>Panel de Control</MenuItem>
-                  <MenuItem href="/admin/vehiculos" icon={Users}>Gestión de Usuarios</MenuItem>
+                  {isCustomer() && (
+                    <>
+                      <MenuItem href="/favorites" icon={Heart}>Mis Favoritos</MenuItem>
+                      <MenuItem href="/inquiries" icon={FileText}>Mis Consultas</MenuItem>
+                    </>
+                  )}
+
+                  <MenuItem href="/auctions" icon={Gavel}>Ver Subastas</MenuItem>
+                  <MenuItem href="/my-auctions" icon={BarChart3}>Mis Subastas</MenuItem>
+                  <MenuItem href="/create-auction" icon={Plus}>Crear Subasta</MenuItem>
+
+                  {isAdmin() && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Administración
+                      </DropdownMenuLabel>
+                      <MenuItem href="/admin" icon={BarChart3}>Panel de Control</MenuItem>
+                      <MenuItem href="/admin/vehiculos" icon={Users}>Gestión de Usuarios</MenuItem>
+                    </>
+                  )}
                 </>
               )}
+            </>
+          )}
+
+          {isTaller && (
+            <>
+              <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Cuenta
+              </DropdownMenuLabel>
+              <MenuItem href="/profile/change-password" icon={Key}>Cambiar Contraseña</MenuItem>
             </>
           )}
 

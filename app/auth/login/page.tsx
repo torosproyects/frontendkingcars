@@ -85,7 +85,15 @@ export default function LoginPage() {
         description: "Sitio de carros para todos los Gustos",
         variant: "success",
       });
-        router.push("/")
+        const user = useAuthStore.getState().user;
+        const role = user?.role;
+        if (role === 'Taller') {
+          router.replace('/taller')
+        } else if (role === 'Administrador') {
+          router.replace('/admin')
+        } else {
+          router.replace('/')
+        }
       }  else {
         toast({
         title: "Credenciales incorrectas",

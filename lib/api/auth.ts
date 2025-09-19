@@ -3,7 +3,7 @@ import { connectivityService } from '../service/connectivity-service';
 import { fetchWithRetry, withRetry, isNetworkError } from '../utils/retry-utils';
 
 // Configuración de la API
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 interface ProfileResponse {
   success: boolean;
   user: User;

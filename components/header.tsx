@@ -70,6 +70,8 @@ export default function Header() {
     return null;
   };
 
+  const isTaller = isDealer();
+
   return (
     <header className="sticky top-0 z-50 w-full bg-background border-b">
       <div className="container flex h-16 items-center justify-between">
@@ -290,6 +292,7 @@ export default function Header() {
            
           </Link>
           
+          {!isTaller && (
           <NavigationMenu className="hidden lg:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
@@ -542,6 +545,7 @@ export default function Header() {
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {/* Indicador de verificación en desktop */}

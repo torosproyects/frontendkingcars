@@ -4,8 +4,7 @@ import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/components/providers/auth-provider';
 import  CarsProvider  from '@/components/providers/cars-provider';
-import Header from '@/components/header';
-import Footer from '@/components/footer';
+import AppShell from '@/components/app-shell';
 import { Toaster } from '@/components/ui/toaster';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -31,11 +30,9 @@ export default function RootLayout({
         >
         <CarsProvider>
           <AuthProvider>
-              <div className="flex flex-col min-h-screen">
-                <Header />
-                <main className="flex-grow">{children}</main>
-                <Footer />
-              </div>
+              <AppShell>
+                {children}
+              </AppShell>
               <Toaster />
            </AuthProvider>
          </CarsProvider>

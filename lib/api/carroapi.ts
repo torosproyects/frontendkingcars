@@ -2,7 +2,7 @@ import { Carro } from "@/types/carro";
 
 // URL base del backend
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 // Función para pausar entre reintentos
 function delay(ms: number): Promise<void> {

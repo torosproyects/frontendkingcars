@@ -190,6 +190,88 @@ function TallerDashboard() {
         </Card>
       </div>
 
+      {/* Evaluación Interactiva - Nueva Sección */}
+      <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-900">
+            <Car size={24} />
+            Evaluación Interactiva de Vehículos
+          </CardTitle>
+          <CardDescription className="text-blue-700">
+            Sistema innovador de evaluación visual con partes del carro interactivas
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="font-semibold text-blue-900">Características Principales</h4>
+                <ul className="space-y-1 text-sm text-blue-700">
+                  <li className="flex items-center gap-2">
+                    <span className="text-blue-500">🎯</span>
+                    Haz clic en cualquier parte del carro
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-blue-500">📊</span>
+                    Campos dinámicos según tipo de evaluación
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-blue-500">📸</span>
+                    Captura fotos por parte evaluada
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-blue-500">📄</span>
+                    Exporta datos en formato JSON
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="font-semibold text-blue-900">Tipos de Evaluación</h4>
+                <div className="grid grid-cols-1 gap-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-blue-700">Entrada: Inspección visual inicial</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                    <span className="text-blue-700">Pruebas: Mediciones técnicas específicas</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                    <span className="text-blue-700">Final: Recomendaciones y resumen</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="text-4xl mb-2">🚗</div>
+                <p className="text-sm text-blue-700 mb-4">
+                  Interfaz visual intuitiva con 12+ partes del vehículo evaluables
+                </p>
+              </div>
+              
+              <div className="space-y-3">
+                <Link href="/taller/evaluacion/interactiva">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                    <Car size={16} className="mr-2" />
+                    Probar Evaluación Interactiva
+                  </Button>
+                </Link>
+                
+                <div className="text-center">
+                  <p className="text-xs text-blue-600">
+                    ✨ Nueva funcionalidad disponible
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Acciones Rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
@@ -243,6 +325,12 @@ function TallerDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
+            <Link href="/taller/evaluacion/interactiva">
+              <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                <Car size={16} className="mr-2" />
+                Evaluación Interactiva
+              </Button>
+            </Link>
             <Link href="/taller/evaluacion/entrada">
               <Button variant="outline" className="w-full">
                 <Plus size={16} className="mr-2" />
